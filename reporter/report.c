@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2009-2022, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
  */
+#define __CSV__
 
 #include "pg_statsinfo.h"
 
@@ -410,6 +411,9 @@ report_database_statistics(PGconn *conn, ReportScope *scope, FILE *out)
 	PGresult	*res;
 	const char	*params[] = { scope->beginid, scope->endid };
 	int			 i;
+#ifdef __CSV__
+	FILE		*tout = stdout;
+#endif
 
 	fprintf(out, "----------------------------------------\n");
 	fprintf(out, "/* Database Statistics */\n");
@@ -441,6 +445,13 @@ report_database_statistics(PGconn *conn, ReportScope *scope, FILE *out)
 		"DateTime", "Database", "Commit/s", "Rollback/s");
 	fprintf(out, "-----------------------------------------------------------------\n");
 
+#ifdef __CSV__
+	if ((tout = fopen("TS-transaction-statistics.csv", "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", "TS-transaction-statistics.csv")));
+#endif
+
 	res = pgut_execute(conn, SQL_SELECT_XACT_TENDENCY, lengthof(params), params);
 	for(i = 0; i < PQntuples(res); i++)
 	{
@@ -449,7 +460,18 @@ report_database_statistics(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 1),
 			PQgetvalue(res, i, 2),
 			PQgetvalue(res, i, 3));
+#ifdef __CSV__
+		fprintf(tout, "%-16s,%s,%s,%s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1),
+			PQgetvalue(res, i, 2),
+			PQgetvalue(res, i, 3));
+#endif
 	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
 	fprintf(out, "\n");
 	PQclear(res);
 
@@ -459,6 +481,13 @@ report_database_statistics(PGconn *conn, ReportScope *scope, FILE *out)
 		"DateTime", "Database", "Size");
 	fprintf(out, "-----------------------------------------------------\n");
 
+#ifdef __CSV__
+	if ((tout = fopen("TS-database-size.csv", "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", "TS-database-size.csv")));
+#endif
+
 	res = pgut_execute(conn, SQL_SELECT_DBSIZE_TENDENCY, lengthof(params), params);
 	for(i = 0; i < PQntuples(res); i++)
 	{
@@ -466,7 +495,17 @@ report_database_statistics(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 0),
 			PQgetvalue(res, i, 1),
 			PQgetvalue(res, i, 2));
+#ifdef __CSV__
+		fprintf(tout, "%-16s,%s,%s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1),
+			PQgetvalue(res, i, 2));
+#endif
 	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
 	fprintf(out, "\n");
 	PQclear(res);
 
@@ -558,6 +597,9 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 	PGresult	*res;
 	const char	*params[] = { scope->beginid, scope->endid };
 	int			 i;
+#ifdef __CSV__
+	FILE		*tout = stdout;
+#endif
 
 	fprintf(out, "----------------------------------------\n");
 	fprintf(out, "/* Instance Activity */\n");
@@ -595,6 +637,13 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 		"DateTime", "Location", "Segment File", "Write Size", "Write Size/s", "Last Archived WAL");
 	fprintf(out, "-------------------------------------------------------------------------------------------------------------------\n");
 
+#ifdef __CSV__
+	if ((tout = fopen("TS-wal-statistics.csv", "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", "TS-wal-statistics.csv")));
+#endif
+
 	res = pgut_execute(conn, SQL_SELECT_WALSTATS_TENDENCY, lengthof(params), params);
 	for(i = 0; i < PQntuples(res); i++)
 	{
@@ -605,7 +654,20 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 3),
 			PQgetvalue(res, i, 4),
 			PQgetvalue(res, i, 5));
+#ifdef __CSV__
+		fprintf(out, "%-16s,%-17s,%-24s,%s,%s, %-17s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1),
+			PQgetvalue(res, i, 2),
+			PQgetvalue(res, i, 3),
+			PQgetvalue(res, i, 4),
+			PQgetvalue(res, i, 5));
+#endif
 	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
 	fprintf(out, "\n");
 	PQclear(res);
 	
@@ -637,6 +699,13 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 		"DateTime", "Idle", "(%)", "Idle In Xact", "(%)", "Waiting", "(%)", "Running", "(%)");
 	fprintf(out, "---------------------------------------------------------------------------------------------------------------------------------\n");
 
+#ifdef __CSV__
+	if ((tout = fopen("TS-instance-processes.csv", "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", "TS-instance-processes.csv")));
+#endif
+
 	res = pgut_execute(conn, SQL_SELECT_INSTANCE_PROC_TENDENCY, lengthof(params), params);
 	for(i = 0; i < PQntuples(res); i++)
 	{
@@ -650,7 +719,23 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 6),
 			PQgetvalue(res, i, 7),
 			PQgetvalue(res, i, 8));
+#ifdef __CSV__
+		fprintf(out, "%-16s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1),
+			PQgetvalue(res, i, 2),
+			PQgetvalue(res, i, 3),
+			PQgetvalue(res, i, 4),
+			PQgetvalue(res, i, 5),
+			PQgetvalue(res, i, 6),
+			PQgetvalue(res, i, 7),
+			PQgetvalue(res, i, 8));
+#endif
 	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
 	fprintf(out, "\n");
 	PQclear(res);
 
@@ -726,6 +811,9 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 	PGresult	*res;
 	const char	*params[] = { scope->beginid, scope->endid };
 	int			 i;
+#ifdef __CSV__
+	FILE		*tout = stdout;
+#endif
 
 	fprintf(out, "----------------------------------------\n");
 	fprintf(out, "/* OS Resource Usage */\n");
@@ -736,6 +824,13 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "%-16s  %8s  %8s  %8s  %8s  %8s  %8s  %9s\n",
 		"DateTime", "User", "System", "Idle", "IOwait", "Loadavg1", "Loadavg5", "Loadavg15");
 	fprintf(out, "------------------------------------------------------------------------------------------\n");
+
+#ifdef __CSV__
+	if ((tout = fopen("TS-resource-usage-load-average.csv", "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", "TS-resource-usage-load-average.csv")));
+#endif
 
 	res = pgut_execute(conn, SQL_SELECT_CPU_LOADAVG_TENDENCY, lengthof(params), params);
 	for(i = 0; i < PQntuples(res); i++)
@@ -749,7 +844,22 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 5),
 			PQgetvalue(res, i, 6),
 			PQgetvalue(res, i, 7));
+#ifdef __CSV__
+		fprintf(out, "%-16s,%s,%s,%s,%s,%s,%s,%s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1),
+			PQgetvalue(res, i, 2),
+			PQgetvalue(res, i, 3),
+			PQgetvalue(res, i, 4),
+			PQgetvalue(res, i, 5),
+			PQgetvalue(res, i, 6),
+			PQgetvalue(res, i, 7));
+#endif
 	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
 	fprintf(out, "\n");
 	PQclear(res);
 
@@ -792,6 +902,13 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 		"DateTime", "Device", "Read Size/s (Peak)", "Write Size/s (Peak)", "Read Time Rate", "Write Time Rate");
 	fprintf(out, "---------------------------------------------------------------------------------------------------------------------------------\n");
 
+#ifdef __CSV__
+	if ((tout = fopen("TS-io-usage.csv", "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", "TS-io-usage.csv")));
+#endif
+
 	res = pgut_execute(conn, SQL_SELECT_IO_USAGE_TENDENCY, lengthof(params), params);
 	for(i = 0; i < PQntuples(res); i++)
 	{
@@ -804,7 +921,22 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 7),
 			PQgetvalue(res, i, 4),
 			PQgetvalue(res, i, 5));
-	}
+#ifdef __CSV__
+			fprintf(out, "%-16s,%s,%s,%s,%s,%s,%s,%s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1),
+			PQgetvalue(res, i, 2),
+			PQgetvalue(res, i, 6),
+			PQgetvalue(res, i, 3),
+			PQgetvalue(res, i, 7),
+			PQgetvalue(res, i, 4),
+			PQgetvalue(res, i, 5));
+#endif
+}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
 	fprintf(out, "\n");
 	PQclear(res);
 
@@ -813,6 +945,13 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "%-16s  %12s  %12s  %12s  %12s  %12s\n",
 		"DateTime", "Memfree", "Buffers", "Cached", "Swap", "Dirty");
 	fprintf(out, "-----------------------------------------------------------------------------------------\n");
+
+#ifdef __CSV__
+	if ((tout = fopen("TS-memory-usage.csv", "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", "TS-memory-usage.csv")));
+#endif
 
 	res = pgut_execute(conn, SQL_SELECT_MEMORY_TENDENCY, lengthof(params), params);
 	for(i = 0; i < PQntuples(res); i++)
@@ -824,7 +963,20 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 3),
 			PQgetvalue(res, i, 4),
 			PQgetvalue(res, i, 5));
+#ifdef __CSV__
+			fprintf(out, "%-16s,%s,%s,%s,%s,%s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1),
+			PQgetvalue(res, i, 2),
+			PQgetvalue(res, i, 3),
+			PQgetvalue(res, i, 4),
+			PQgetvalue(res, i, 5));
+#endif
 	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
 	fprintf(out, "\n");
 	PQclear(res);
 }
