@@ -268,6 +268,24 @@ static int get_server_version(PGconn *conn);
 static int parse_version(const char *versionString);
 static void print_alert_data(PGconn *conn, ReportScope *scope, FILE *out);
 
+#ifdef __CSV__
+static char fullfilename[128];
+
+extern char tsd[];
+
+static char *
+create_filename(const char* filename)
+{
+	memset(fullfilename, '\0', sizeof(fullfilename));
+	if (tsd[0] == '\0')
+		sprintf(fullfilename, "%s", filename);
+	else
+		sprintf(fullfilename, "%s/%s", tsd, filename);
+	return fullfilename;
+}
+
+#endif
+
 /*
  * generate a report
  */
@@ -413,6 +431,7 @@ report_database_statistics(PGconn *conn, ReportScope *scope, FILE *out)
 	int			 i;
 #ifdef __CSV__
 	FILE		*tout = stdout;
+	char *f;
 #endif
 
 	fprintf(out, "----------------------------------------\n");
@@ -446,10 +465,14 @@ report_database_statistics(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "-----------------------------------------------------------------\n");
 
 #ifdef __CSV__
-	if ((tout = fopen("TS-transaction-statistics.csv", "w+")) == NULL)
+	f = create_filename("TS-transaction-statistics.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
 		ereport(ERROR,
 				(errcode_errno(),
-				 errmsg("could not open file : '%s'", "TS-transaction-statistics.csv")));
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s,%s,%s\n",
+		"DateTime", "Database", "Commit/s", "Rollback/s");
 #endif
 
 	res = pgut_execute(conn, SQL_SELECT_XACT_TENDENCY, lengthof(params), params);
@@ -482,10 +505,14 @@ report_database_statistics(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "-----------------------------------------------------\n");
 
 #ifdef __CSV__
-	if ((tout = fopen("TS-database-size.csv", "w+")) == NULL)
+	f = create_filename("TS-database-size.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
 		ereport(ERROR,
 				(errcode_errno(),
-				 errmsg("could not open file : '%s'", "TS-database-size.csv")));
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s,%s\n",
+		"DateTime", "Database", "Size");
 #endif
 
 	res = pgut_execute(conn, SQL_SELECT_DBSIZE_TENDENCY, lengthof(params), params);
@@ -599,6 +626,7 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 	int			 i;
 #ifdef __CSV__
 	FILE		*tout = stdout;
+	char *f;
 #endif
 
 	fprintf(out, "----------------------------------------\n");
@@ -638,10 +666,14 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "-------------------------------------------------------------------------------------------------------------------\n");
 
 #ifdef __CSV__
-	if ((tout = fopen("TS-wal-statistics.csv", "w+")) == NULL)
+	f = create_filename("TS-wal-statistics.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
 		ereport(ERROR,
 				(errcode_errno(),
-				 errmsg("could not open file : '%s'", "TS-wal-statistics.csv")));
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s,%s,%s,%s,%s\n",
+		"DateTime", "Location", "Segment File", "Write Size", "Write Size/s", "Last Archived WAL");
 #endif
 
 	res = pgut_execute(conn, SQL_SELECT_WALSTATS_TENDENCY, lengthof(params), params);
@@ -700,10 +732,14 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "---------------------------------------------------------------------------------------------------------------------------------\n");
 
 #ifdef __CSV__
-	if ((tout = fopen("TS-instance-processes.csv", "w+")) == NULL)
+	f = create_filename("TS-instance-processes.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
 		ereport(ERROR,
 				(errcode_errno(),
-				 errmsg("could not open file : '%s'", "TS-instance-processes.csv")));
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+		"DateTime", "Idle", "(%)", "Idle In Xact", "(%)", "Waiting", "(%)", "Running", "(%)");
 #endif
 
 	res = pgut_execute(conn, SQL_SELECT_INSTANCE_PROC_TENDENCY, lengthof(params), params);
@@ -813,6 +849,7 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 	int			 i;
 #ifdef __CSV__
 	FILE		*tout = stdout;
+	char *f;
 #endif
 
 	fprintf(out, "----------------------------------------\n");
@@ -826,10 +863,14 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "------------------------------------------------------------------------------------------\n");
 
 #ifdef __CSV__
-	if ((tout = fopen("TS-resource-usage-load-average.csv", "w+")) == NULL)
+	f = create_filename("TS-resource-usage-load-average.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
 		ereport(ERROR,
 				(errcode_errno(),
-				 errmsg("could not open file : '%s'", "TS-resource-usage-load-average.csv")));
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s,%s,%s,%s,%s,%s,%s\n",
+			"DateTime", "User", "System", "Idle", "IOwait", "Loadavg1", "Loadavg5", "Loadavg15");
 #endif
 
 	res = pgut_execute(conn, SQL_SELECT_CPU_LOADAVG_TENDENCY, lengthof(params), params);
@@ -903,10 +944,14 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "---------------------------------------------------------------------------------------------------------------------------------\n");
 
 #ifdef __CSV__
-	if ((tout = fopen("TS-io-usage.csv", "w+")) == NULL)
+	f = create_filename("TS-io-usage.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
 		ereport(ERROR,
 				(errcode_errno(),
-				 errmsg("could not open file : '%s'", "TS-io-usage.csv")));
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s,%s,%s,%s,%s\n",
+		"DateTime", "Device", "Read Size/s (Peak)", "Write Size/s (Peak)", "Read Time Rate", "Write Time Rate");
 #endif
 
 	res = pgut_execute(conn, SQL_SELECT_IO_USAGE_TENDENCY, lengthof(params), params);
@@ -947,10 +992,14 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "-----------------------------------------------------------------------------------------\n");
 
 #ifdef __CSV__
-	if ((tout = fopen("TS-memory-usage.csv", "w+")) == NULL)
+	f = create_filename("TS-memory-usage.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
 		ereport(ERROR,
 				(errcode_errno(),
-				 errmsg("could not open file : '%s'", "TS-memory-usage.csv")));
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s,%s,%s,%s,%s\n",
+		"DateTime", "Memfree", "Buffers", "Cached", "Swap", "Dirty");
 #endif
 
 	res = pgut_execute(conn, SQL_SELECT_MEMORY_TENDENCY, lengthof(params), params);

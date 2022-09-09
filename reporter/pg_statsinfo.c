@@ -3,8 +3,12 @@
  *
  * Copyright (c) 2009-2022, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
  */
-
+#define __CSV__
 #include "pg_statsinfo.h"
+#ifdef __CSV__
+#include <stdlib.h>
+#include <sys/stat.h>
+#endif
 
 const char *PROGRAM_VERSION	= "14.0";
 const char *PROGRAM_URL		= "https://github.com/ossc-db/pg_statsinfo/";
@@ -23,6 +27,11 @@ static char			*endid = NULL;
 static time_t		 begindate = (time_t) -1;
 static time_t		 enddate = (time_t) -1;
 static char			*output;
+#ifdef __CSV__
+static char			*ts_dir;
+
+char tsd[64]; /* data directory */
+#endif
 
 /* options */
 static struct pgut_option options[] =
@@ -40,6 +49,9 @@ static struct pgut_option options[] =
 	{ 't', 'B', "begindate", &begindate },
 	{ 't', 'E', "enddate", &enddate },
 	{ 's', 'o', "output", &output },
+#ifdef __CSV__
+	{ 's', 't', "dir", &ts_dir },
+#endif
 	{ 0 }
 };
 
@@ -50,6 +62,11 @@ main(int argc, char *argv[])
 	StringInfoData	 conn_info;
 	int				 num_options;
 	int				 mode_cnt;
+#ifdef __CSV__
+	struct stat statBuf;
+
+	ts_dir = NULL;
+#endif
 
 	num_options = pgut_getopt(argc, argv, options);
 
@@ -76,6 +93,30 @@ main(int argc, char *argv[])
 		ereport(ERROR,
 			(errcode(EINVAL),
 			 errmsg("can't specify two or more mode")));
+
+#ifdef __CSV__
+	/*
+	 * Create ts_dir
+	 */
+	memset(tsd, '\0', sizeof(tsd));
+	if (ts_dir != NULL)
+	{
+		strcpy(tsd, ts_dir);
+		if (stat(tsd, &statBuf) == 0)
+		{
+			printf("Error: %s already exists.\n", tsd);
+			exit(-1);
+		}
+		else
+		{
+			if (mkdir(tsd, S_IRWXU) != 0)
+			{
+				printf("Error: %s could not created.", tsd);
+				exit(-1);
+			}
+		}
+	}
+#endif
 
 	/* connect to database */
 	initStringInfo(&conn_info);
