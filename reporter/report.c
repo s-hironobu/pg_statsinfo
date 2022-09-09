@@ -655,7 +655,7 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 4),
 			PQgetvalue(res, i, 5));
 #ifdef __CSV__
-		fprintf(out, "%-16s,%-17s,%-24s,%s,%s, %-17s\n",
+		fprintf(tout, "%-16s,%-17s,%-24s,%s,%s, %-17s\n",
 			PQgetvalue(res, i, 0),
 			PQgetvalue(res, i, 1),
 			PQgetvalue(res, i, 2),
@@ -720,7 +720,7 @@ report_instance_activity(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 7),
 			PQgetvalue(res, i, 8));
 #ifdef __CSV__
-		fprintf(out, "%-16s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+		fprintf(tout, "%-16s,%s,%s,%s,%s,%s,%s,%s,%s\n",
 			PQgetvalue(res, i, 0),
 			PQgetvalue(res, i, 1),
 			PQgetvalue(res, i, 2),
@@ -845,7 +845,7 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 6),
 			PQgetvalue(res, i, 7));
 #ifdef __CSV__
-		fprintf(out, "%-16s,%s,%s,%s,%s,%s,%s,%s\n",
+		fprintf(tout, "%-16s,%s,%s,%s,%s,%s,%s,%s\n",
 			PQgetvalue(res, i, 0),
 			PQgetvalue(res, i, 1),
 			PQgetvalue(res, i, 2),
@@ -922,7 +922,7 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 4),
 			PQgetvalue(res, i, 5));
 #ifdef __CSV__
-			fprintf(out, "%-16s,%s,%s,%s,%s,%s,%s,%s\n",
+			fprintf(tout, "%-16s,%s,%s,%s,%s,%s,%s,%s\n",
 			PQgetvalue(res, i, 0),
 			PQgetvalue(res, i, 1),
 			PQgetvalue(res, i, 2),
@@ -964,7 +964,7 @@ report_resource_usage(PGconn *conn, ReportScope *scope, FILE *out)
 			PQgetvalue(res, i, 4),
 			PQgetvalue(res, i, 5));
 #ifdef __CSV__
-			fprintf(out, "%-16s,%s,%s,%s,%s,%s\n",
+			fprintf(tout, "%-16s,%s,%s,%s,%s,%s\n",
 			PQgetvalue(res, i, 0),
 			PQgetvalue(res, i, 1),
 			PQgetvalue(res, i, 2),
