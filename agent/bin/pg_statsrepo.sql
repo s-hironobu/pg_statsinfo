@@ -711,6 +711,13 @@ CREATE TABLE statsrepo.archive
 	FOREIGN KEY (snapid) REFERENCES statsrepo.snapshot (snapid) ON DELETE CASCADE
 );
 
+CREATE TABLE statsrepo.num_user
+(
+	instid				bigint,
+	num_user			int /*,
+	FOREIGN KEY (snapid) REFERENCES statsrepo.snapshot (snapid) ON DELETE CASCADE */
+);
+
 CREATE TABLE statsrepo.log
 (
 	instid				bigint,
