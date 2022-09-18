@@ -50,6 +50,14 @@ CREATE FUNCTION statsinfo.activity(
 AS 'MODULE_PATHNAME', 'statsinfo_activity'
 LANGUAGE C STRICT;
 
+---
+--- statsinfo.num_user()
+---
+CREATE FUNCTION statsinfo.num_user(
+       OUT num_user                    int)
+AS 'MODULE_PATHNAME', 'statsinfo_num_user'
+LANGUAGE C STRICT;
+
 --
 -- statsinfo.long_xact()
 --

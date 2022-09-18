@@ -15,7 +15,7 @@ DATA_built = pg_statsinfo.sql
 DATA = uninstall_pg_statsinfo.sql
 MODULE_big = pg_statsinfo
 
-SHLIB_LINK = -Wl,--version-script=library.map
+#SHLIB_LINK = -Wl,--version-script=library.map
 
 ifndef USE_PGXS
 top_builddir = ../../../..
