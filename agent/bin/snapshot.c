@@ -6,6 +6,8 @@
 
 #include "pg_statsinfod.h"
 
+#define __USER__
+
 /* XXX: should read SQLs from external files? */
 #include "collector_sql.h"
 #include "writer_sql.h"
@@ -452,6 +454,9 @@ Snap_exec(Snap *snap, PGconn *conn, const char *instid)
 	PGresult   *alerts = NULL;
 	PGresult   *update_res = NULL;
 	char	   *end = NULL;
+#ifdef __USER__
+	PGresult   *num_user = NULL;
+#endif
 
 	elog(DEBUG2, "write (snapshot)");
 
@@ -496,6 +501,18 @@ Snap_exec(Snap *snap, PGconn *conn, const char *instid)
 
 	if (!do_puts(conn, instance_puts, snap->instance, snapid, NULL, NULL))
 		goto error;
+
+#ifdef __USER__
+	num_user = do_get(conn, "SELECT statsinfo.num_user()", 0, NULL);
+	if (num_user == NULL)
+		goto error;
+
+	params[0] = snapid;
+	params[1] = PQgetvalue(num_user, 0, 0);
+	//	elog(DEBUG2, "num_user=%s", params[1]);
+	if (pgut_command(conn, SQL_INSERT_NUM_USER, 2, params) != PGRES_COMMAND_OK)
+		goto error;
+#endif
 
 	i = 0;
 	foreach(db, snap->dbsnaps)

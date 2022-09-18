@@ -7,6 +7,7 @@
 #ifndef WRITER_SQL_H
 #define WRITER_SQL_H
 
+#define __USER__
 /*
  * snapshot query
  */
@@ -98,6 +99,11 @@ INSERT INTO statsrepo.rusage \
  SELECT (($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)::statsrepo.rusage).* \
    FROM statsrepo.database d \
   WHERE d.snapid = $1 AND d.dbid = $2"
+
+#ifdef __USER__
+#define SQL_INSERT_NUM_USER "\
+INSERT INTO statsrepo.num_user VALUES ($1, $2)"
+#endif
 
 #define SQL_INSERT_HT_INFO "\
 INSERT INTO statsrepo.ht_info VALUES ($1, $2, $3, $4, $5, $6, $7)"
