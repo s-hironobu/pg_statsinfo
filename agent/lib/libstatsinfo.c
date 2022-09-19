@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2009-2022, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
  */
-
+#define __USER__
 #include "libstatsinfo.h"
 
 #include <fcntl.h>
@@ -327,6 +327,39 @@ PG_FUNCTION_INFO_V1(statsinfo_profile);
 PG_FUNCTION_INFO_V1(statsinfo_cpuinfo);
 PG_FUNCTION_INFO_V1(statsinfo_meminfo);
 
+#ifdef __USER__
+extern Datum statsinfo_sample(PG_FUNCTION_ARGS);
+extern Datum statsinfo_sample_wait_sampling(PG_FUNCTION_ARGS);
+extern Datum statsinfo_sample_wait_sampling_reset(PG_FUNCTION_ARGS);
+extern Datum statsinfo_sample_wait_sampling_info(PG_FUNCTION_ARGS);
+extern Datum statsinfo_activity(PG_FUNCTION_ARGS);
+extern Datum statsinfo_long_xact(PG_FUNCTION_ARGS);
+extern Datum statsinfo_snapshot(PG_FUNCTION_ARGS);
+extern Datum statsinfo_maintenance(PG_FUNCTION_ARGS);
+extern Datum statsinfo_wait_sampling_profile(PG_FUNCTION_ARGS);
+extern Datum statsinfo_tablespaces(PG_FUNCTION_ARGS);
+extern Datum statsinfo_start(PG_FUNCTION_ARGS);
+extern Datum statsinfo_stop(PG_FUNCTION_ARGS);
+extern Datum statsinfo_cpustats(PG_FUNCTION_ARGS);
+extern Datum statsinfo_cpustats_noarg(PG_FUNCTION_ARGS);
+extern Datum statsinfo_devicestats(PG_FUNCTION_ARGS);
+extern Datum statsinfo_loadavg(PG_FUNCTION_ARGS);
+extern Datum statsinfo_memory(PG_FUNCTION_ARGS);
+extern Datum statsinfo_profile(PG_FUNCTION_ARGS);
+extern Datum statsinfo_cpuinfo(PG_FUNCTION_ARGS);
+extern Datum statsinfo_meminfo(PG_FUNCTION_ARGS);
+
+extern Datum statsinfo_num_user(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(statsinfo_num_user);
+
+extern void	_PG_init(void);
+extern void	_PG_fini(void);
+extern void	init_last_xact_activity(void);
+extern void	fini_last_xact_activity(void);
+extern void	init_wait_sampling(void);
+extern void	fini_wait_sampling(void);
+extern void	wait_sampling_shmem_startup(void);
+#else
 extern Datum PGUT_EXPORT statsinfo_sample(PG_FUNCTION_ARGS);
 extern Datum PGUT_EXPORT statsinfo_sample_wait_sampling(PG_FUNCTION_ARGS);
 extern Datum PGUT_EXPORT statsinfo_sample_wait_sampling_reset(PG_FUNCTION_ARGS);
@@ -355,6 +388,9 @@ extern PGUT_EXPORT void	fini_last_xact_activity(void);
 extern PGUT_EXPORT void	init_wait_sampling(void);
 extern PGUT_EXPORT void	fini_wait_sampling(void);
 extern PGUT_EXPORT void	wait_sampling_shmem_startup(void);
+#endif
+
+
 
 /*----  Internal declarations ----*/
 
@@ -514,6 +550,33 @@ static volatile bool	 got_SIGUSR1 = false;
 static volatile bool	 got_SIGUSR2 = false;
 static volatile bool	 got_SIGHUP = false;
 static silSharedState	*sil_state = NULL;
+
+#ifdef __USER__
+/*
+ * statsinfo_num_user
+ */
+Datum
+statsinfo_num_user(PG_FUNCTION_ARGS)
+{
+	int i, num_backends;
+	int num_user = 0;
+
+	num_backends = pgstat_fetch_stat_numbackends();
+
+	for (i = 1; i <= num_backends; i++)
+	{
+		PgBackendStatus *beentry = NULL;
+		beentry = pgstat_fetch_stat_beentry(i);
+		if (beentry == NULL)
+			continue;
+		if (beentry->st_backendType == B_BACKEND)
+			num_user++;
+	}
+
+	PG_RETURN_INT32(num_user);
+}
+#endif
+
 
 /*
  * statsinfo_sample - sample statistics for server instance.
@@ -2799,6 +2862,7 @@ statsinfo_meminfo(PG_FUNCTION_ARGS)
 
 	PG_RETURN_INT64(mem_total);
 }
+
 
 static bool
 checked_write(int fd, const void *buf, int size)

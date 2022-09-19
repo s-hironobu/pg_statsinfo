@@ -15,6 +15,8 @@
 #include "pgut/pgut-fe.h"
 #include "pgut/pgut-list.h"
 
+#define __USER__
+
 /* report ID */
 #define REPORTID_SUMMARY				"Summary"
 #define REPORTID_DATABASE_STATISTICS	"DatabaseStatistics"
@@ -33,6 +35,9 @@
 #define REPORTID_ALERT					"Alert"
 #define REPORTID_PROFILES				"Profiles"
 #define REPORTID_HARDWARE_INFO			"HardwareInformation"
+#ifdef __USER__
+#define REPORTID_NUM_USER  				"NumUser"
+#endif
 #define REPORTID_ALL					"All"
 
 /* report.c */
@@ -50,4 +55,5 @@ extern void do_delete(PGconn *conn, const char *targetid);
 extern void do_start(PGconn *conn);
 extern void do_stop(PGconn *conn);
 
+#undef __USER__
 #endif   /* PG_STATSINFO_H */
