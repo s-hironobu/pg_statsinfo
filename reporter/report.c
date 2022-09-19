@@ -3,9 +3,10 @@
  *
  * Copyright (c) 2009-2022, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
  */
-#define __CSV__
-
 #include "pg_statsinfo.h"
+
+#define __USER__
+#define __CSV__
 
 #include <time.h>
 
@@ -182,6 +183,9 @@ FROM \
 #define SQL_SELECT_PROFILES						"SELECT * FROM statsrepo.get_profiles($1, $2)"
 #define SQL_SELECT_CPU_INFO						"SELECT * FROM statsrepo.get_cpuinfo($1, $2)"
 #define SQL_SELECT_MEM_INFO						"SELECT * FROM statsrepo.get_meminfo($1, $2)"
+#ifdef __USER__
+#define SQL_SELECT_NUM_USER						"SELECT * FROM statsrepo.get_num_user($1, $2)"
+#endif
 
 #define SQL_SELECT_REPORT_SCOPE_BY_SNAPID "\
 	SELECT \
@@ -259,6 +263,9 @@ static void report_alert_section(PGconn *conn, ReportScope *scope, FILE *out);
 static void report_profiles(PGconn *conn, ReportScope *scope, FILE *out);
 static void report_hardware_info(PGconn *conn, ReportScope *scope, FILE *out);
 static void report_all(PGconn *conn, ReportScope *scope, FILE *out);
+#ifdef __USER__
+static void report_num_user(PGconn *conn, ReportScope *scope, FILE *out);
+#endif
 
 static ReportBuild parse_reportid(const char *value);
 static List *select_scope_by_snapid(PGconn *conn, const char *beginid, const char *endid);
@@ -1813,6 +1820,10 @@ report_hardware_info(PGconn *conn, ReportScope *scope, FILE *out)
 	PGresult	*res;
 	const char	*params[] = { scope->beginid, scope->endid };
 	int			 i;
+#ifdef __CSV__
+	FILE		*tout = stdout;
+	char *f;
+#endif
 
 	fprintf(out, "----------------------------------------\n");
 	fprintf(out, "/* Hardware Information */\n");
@@ -1847,16 +1858,88 @@ report_hardware_info(PGconn *conn, ReportScope *scope, FILE *out)
 	fprintf(out, "%-16s  %13s\n", "DateTime", "System memory");
 	fprintf(out, "---------------------------------\n");
 
+#ifdef __CSV__
+	f = create_filename("TS-memory-info.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s\n", "DateTime", "Number of User");
+#endif
+
 	res = pgut_execute(conn, SQL_SELECT_MEM_INFO, lengthof(params), params);
 	for(i = 0; i < PQntuples(res); i++)
 	{
 		fprintf(out, "%-16s  %13s\n",
 			PQgetvalue(res, i, 0),
 			PQgetvalue(res, i, 1));
+#ifdef __CSV__
+		fprintf(tout, "%-16s,%s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1));
+#endif
 	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
 	fprintf(out, "\n");
 	PQclear(res);
 }
+
+#ifdef __USER__
+/*
+ * generate number of users report
+ */
+static void
+report_num_user(PGconn *conn, ReportScope *scope, FILE *out)
+{
+	PGresult	*res;
+	const char	*params[] = { scope->beginid, scope->endid };
+	int			 i;
+#ifdef __CSV__
+	FILE		*tout = stdout;
+	char *f;
+#endif
+
+	fprintf(out, "---------------------------------\n");
+	fprintf(out, "/*   Users                     */\n");
+	fprintf(out, "---------------------------------\n\n");
+
+	fprintf(out, "%-16s  %13s\n", "DateTime", "Number of User");
+	fprintf(out, "---------------------------------\n");
+
+#ifdef __CSV__
+	f = create_filename("TS-num-user.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s\n", "DateTime", "Number of User");
+#endif
+
+	res = pgut_execute(conn, SQL_SELECT_NUM_USER, lengthof(params), params);
+	for(i = 0; i < PQntuples(res); i++)
+	{
+		fprintf(out, "%-16s  %13s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1));
+#ifdef __CSV__
+		fprintf(tout, "%-16s,%s\n",
+			PQgetvalue(res, i, 0),
+			PQgetvalue(res, i, 1));
+#endif
+	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
+	fprintf(out, "\n");
+	PQclear(res);
+}
+#endif
 
 /*
  * generate a report that corresponds to 'All'
@@ -1881,6 +1964,9 @@ report_all(PGconn *conn, ReportScope *scope, FILE *out)
 	report_schema_information(conn, scope, out);
 	report_profiles(conn, scope, out);
 	report_hardware_info(conn, scope, out);
+#ifdef __USER__
+	report_num_user(conn, scope, out);
+#endif
 }
 
 /*
@@ -1938,6 +2024,10 @@ parse_reportid(const char *value)
 		return (ReportBuild) report_profiles;
 	else if (pg_strncasecmp(REPORTID_HARDWARE_INFO, v, len) == 0)
 		return (ReportBuild) report_hardware_info;
+#ifdef __USER__
+	else if (pg_strncasecmp(REPORTID_NUM_USER, v, len) == 0)
+		return (ReportBuild) report_num_user;
+#endif
 	else if (pg_strncasecmp(REPORTID_ALL, v, len) == 0)
 		return (ReportBuild) report_all;
 

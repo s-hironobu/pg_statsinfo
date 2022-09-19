@@ -713,9 +713,9 @@ CREATE TABLE statsrepo.archive
 
 CREATE TABLE statsrepo.num_user
 (
-	instid				bigint,
-	num_user			int /*,
-	FOREIGN KEY (snapid) REFERENCES statsrepo.snapshot (snapid) ON DELETE CASCADE */
+	snapid				bigint,
+	num_user			int,
+	FOREIGN KEY (snapid) REFERENCES statsrepo.snapshot (snapid) ON DELETE CASCADE
 );
 
 CREATE TABLE statsrepo.log
@@ -4064,6 +4064,28 @@ $$
 		AND m.instid = i.instid
 	ORDER BY
 		m.timestamp
+$$
+LANGUAGE sql;
+
+-- generate information that corresponds to 'number of user'
+CREATE FUNCTION statsrepo.get_num_user(
+	IN snapid_begin	bigint,
+	IN snapid_end	bigint,
+	OUT "timestamp"	text,
+	OUT num_user		int
+) RETURNS SETOF record AS
+$$
+	SELECT
+		pg_catalog.to_char(s.time, 'YYYY-MM-DD HH24:MI'),
+		n.num_user
+	FROM
+		statsrepo.num_user n,
+		statsrepo.snapshot s
+	WHERE
+		s.snapid BETWEEN $1 AND $2
+		AND n.snapid = s.snapid
+	ORDER BY
+		s.time;
 $$
 LANGUAGE sql;
 

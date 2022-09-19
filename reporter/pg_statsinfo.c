@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #endif
+#define __USER__
+
 
 const char *PROGRAM_VERSION	= "14.0";
 const char *PROGRAM_URL		= "https://github.com/ossc-db/pg_statsinfo/";
@@ -190,6 +192,9 @@ pgut_help(bool details)
 	printf("                          * SchemaInformation\n");
 	printf("                          * Profiles\n");
 	printf("                          * HardwareInformation\n");
+#ifdef __USER__
+	printf("                          * NumUser\n");
+#endif
 	printf("                          * All\n");
 	printf("                         ---------------------------\n");
 	printf("                         (can prefix match. For example, \"su\" means 'Summary')\n");
