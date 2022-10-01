@@ -509,7 +509,6 @@ Snap_exec(Snap *snap, PGconn *conn, const char *instid)
 
 	params[0] = snapid;
 	params[1] = PQgetvalue(num_user, 0, 0);
-	//	elog(DEBUG2, "num_user=%s", params[1]);
 	if (pgut_command(conn, SQL_INSERT_NUM_USER, 2, params) != PGRES_COMMAND_OK)
 		goto error;
 #endif

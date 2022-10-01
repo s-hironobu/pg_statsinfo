@@ -5,6 +5,7 @@
  */
 #include "pg_statsinfo.h"
 
+#define __TABLE__
 #define __USER__
 #define __CSV__
 
@@ -186,6 +187,9 @@ FROM \
 #ifdef __USER__
 #define SQL_SELECT_NUM_USER						"SELECT * FROM statsrepo.get_num_user($1, $2)"
 #endif
+#ifdef __TABLE__
+#define SQL_SELECT_TABLE_STAT					 "SELECT * FROM statsrepo.get_table_stat($1, $2)"
+#endif
 
 #define SQL_SELECT_REPORT_SCOPE_BY_SNAPID "\
 	SELECT \
@@ -265,6 +269,9 @@ static void report_hardware_info(PGconn *conn, ReportScope *scope, FILE *out);
 static void report_all(PGconn *conn, ReportScope *scope, FILE *out);
 #ifdef __USER__
 static void report_num_user(PGconn *conn, ReportScope *scope, FILE *out);
+#endif
+#ifdef __TABLE__
+static void report_table_stat(PGconn *conn, ReportScope *scope, FILE *out);
 #endif
 
 static ReportBuild parse_reportid(const char *value);
@@ -1941,6 +1948,121 @@ report_num_user(PGconn *conn, ReportScope *scope, FILE *out)
 }
 #endif
 
+
+#ifdef __TABLE__
+/*
+ *
+ */
+static void
+report_table_stat(PGconn *conn, ReportScope *scope, FILE *out)
+{
+	PGresult	*res;
+	const char	*params[] = { scope->beginid, scope->endid };
+	int			 i;
+#ifdef __CSV__
+	FILE		*tout = stdout;
+	char *f;
+#endif
+
+	fprintf(out, "---------------------------------\n");
+	fprintf(out, "/*   Table                      */\n");
+	fprintf(out, "---------------------------------\n\n");
+
+	fprintf(out, "%-16s %13s %13s %20s %13s %13s ",
+			"DateTime", "database", "schema", "table", "reltuples", "size");
+	fprintf(out, "%13s %13s %13s %15s %13s %13s %13s ",
+			"seq_scan",	"seq_tup_read",	"idx_scan", "idx_tup_fetch", "n_tup_ins", "n_tup_upd", "n_tup_del");
+	fprintf(out, "%15s %13s %13s %20s %20s %20s ",
+			"n_tup_hot_upd", "n_live_tup", "n_dead_tup", "n_mod_since_analyze", "heap_blks_read", "heap_blks_hit");
+	fprintf(out, "%15s %15s %20s %20s %20s %20s\n",
+			"idx_blks_read", "idx_blks_hit", "toast_blks_read", "toast_blks_hit", "tidx_blks_read", "tidx_blks_hit");
+	fprintf(out, "---------------------------------\n");
+
+#ifdef __CSV__
+	f = create_filename("TS-table-stat.csv");
+	if ((tout = fopen(f, "w+")) == NULL)
+		ereport(ERROR,
+				(errcode_errno(),
+				 errmsg("could not open file : '%s'", f)));
+
+	fprintf(tout, "%s,%s,%s,%s,%s,%s,",
+			"DateTime", "database", "schema", "table", "reltuples", "size");
+	fprintf(tout, "%s,%s,%s,%s,%s,%s,%s,",
+			"seq_scan",	"seq_tup_read",	"idx_scan", "idx_tup_fetch", "n_tup_ins", "n_tup_upd", "n_tup_del");
+	fprintf(tout, "%s,%s,%s,%s,%s,%s,",
+			"n_tup_hot_upd", "n_live_tup", "n_dead_tup", "n_mod_since_analyze", "heap_blks_read", "heap_blks_hit");
+	fprintf(tout, "%s,%s,%s,%s,%s,%s\n",
+			"idx_blks_read", "idx_blks_hit", "toast_blks_read", "toast_blks_hit", "tidx_blks_read", "tidx_blks_hit");
+#endif
+
+	res = pgut_execute(conn, SQL_SELECT_TABLE_STAT, lengthof(params), params);
+	for(i = 0; i < PQntuples(res); i++)
+	{
+		fprintf(out, "%-16s %13s %13s %20s %13s %13s %13s %13s %13s %15s %13s %13s %13s %15s %13s %13s %20s %20s %20s %15s %15s %20s %20s %20s %20s\n",
+				PQgetvalue(res, i, 0),
+				PQgetvalue(res, i, 1),
+				PQgetvalue(res, i, 2),
+				PQgetvalue(res, i, 3),
+				PQgetvalue(res, i, 4),
+				PQgetvalue(res, i, 5),
+				PQgetvalue(res, i, 6),
+				PQgetvalue(res, i, 7),
+				PQgetvalue(res, i, 8),
+				PQgetvalue(res, i, 9),
+				PQgetvalue(res, i, 10),
+				PQgetvalue(res, i, 11),
+				PQgetvalue(res, i, 12),
+				PQgetvalue(res, i, 13),
+				PQgetvalue(res, i, 14),
+				PQgetvalue(res, i, 15),
+				PQgetvalue(res, i, 16),
+				PQgetvalue(res, i, 17),
+				PQgetvalue(res, i, 18),
+				PQgetvalue(res, i, 19),
+				PQgetvalue(res, i, 20),
+				PQgetvalue(res, i, 21),
+				PQgetvalue(res, i, 22),
+				PQgetvalue(res, i, 23),
+				PQgetvalue(res, i, 24));
+
+#ifdef __CSV__
+		fprintf(tout, "%-16s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+				PQgetvalue(res, i, 0),
+				PQgetvalue(res, i, 1),
+				PQgetvalue(res, i, 2),
+				PQgetvalue(res, i, 3),
+				PQgetvalue(res, i, 4),
+				PQgetvalue(res, i, 5),
+				PQgetvalue(res, i, 6),
+				PQgetvalue(res, i, 7),
+				PQgetvalue(res, i, 8),
+				PQgetvalue(res, i, 9),
+				PQgetvalue(res, i, 10),
+				PQgetvalue(res, i, 11),
+				PQgetvalue(res, i, 12),
+				PQgetvalue(res, i, 13),
+				PQgetvalue(res, i, 14),
+				PQgetvalue(res, i, 15),
+				PQgetvalue(res, i, 16),
+				PQgetvalue(res, i, 17),
+				PQgetvalue(res, i, 18),
+				PQgetvalue(res, i, 19),
+				PQgetvalue(res, i, 20),
+				PQgetvalue(res, i, 21),
+				PQgetvalue(res, i, 22),
+				PQgetvalue(res, i, 23),
+				PQgetvalue(res, i, 24));
+#endif
+	}
+#ifdef __CSV__
+	if (tout != stdout)
+		fclose(tout);
+#endif
+	fprintf(out, "\n");
+	PQclear(res);
+}
+#endif
+
 /*
  * generate a report that corresponds to 'All'
  */
@@ -1966,6 +2088,9 @@ report_all(PGconn *conn, ReportScope *scope, FILE *out)
 	report_hardware_info(conn, scope, out);
 #ifdef __USER__
 	report_num_user(conn, scope, out);
+#endif
+#ifdef __TABLE__
+	report_table_stat(conn, scope, out);
 #endif
 }
 
@@ -2027,6 +2152,10 @@ parse_reportid(const char *value)
 #ifdef __USER__
 	else if (pg_strncasecmp(REPORTID_NUM_USER, v, len) == 0)
 		return (ReportBuild) report_num_user;
+#endif
+#ifdef __TABLE__
+	else if (pg_strncasecmp(REPORTID_TABLE_STAT, v, len) == 0)
+		return (ReportBuild) report_table_stat;
 #endif
 	else if (pg_strncasecmp(REPORTID_ALL, v, len) == 0)
 		return (ReportBuild) report_all;

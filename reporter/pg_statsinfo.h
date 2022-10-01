@@ -16,6 +16,7 @@
 #include "pgut/pgut-list.h"
 
 #define __USER__
+#define __TABLE__
 
 /* report ID */
 #define REPORTID_SUMMARY				"Summary"
@@ -38,6 +39,9 @@
 #ifdef __USER__
 #define REPORTID_NUM_USER  				"NumUser"
 #endif
+#ifdef __TABLE__
+#define REPORTID_TABLE_STAT  			"TableStat"
+#endif
 #define REPORTID_ALL					"All"
 
 /* report.c */
@@ -56,4 +60,5 @@ extern void do_start(PGconn *conn);
 extern void do_stop(PGconn *conn);
 
 #undef __USER__
+#undef __TABLE__
 #endif   /* PG_STATSINFO_H */

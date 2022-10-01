@@ -4089,6 +4089,74 @@ $$
 $$
 LANGUAGE sql;
 
+-- generate information that corresponds to 'stat(io)_tables'
+CREATE FUNCTION statsrepo.get_table_stat(
+	IN snapid_begin	         bigint,
+	IN snapid_end	         bigint,
+	OUT "timestamp"	         text,
+	OUT "database"           name,
+	OUT "schema"             name,
+	OUT "table"              name,
+	OUT reltuples            real,
+	OUT size                 bigint,
+	OUT seq_scan             bigint,
+	OUT seq_tup_read         bigint,
+	OUT idx_scan             bigint,
+	OUT idx_tup_fetch        bigint,
+	OUT n_tup_ins            bigint,
+	OUT n_tup_upd            bigint,
+	OUT n_tup_del            bigint,
+	OUT n_tup_hot_upd        bigint,
+	OUT n_live_tup           bigint,
+	OUT n_dead_tup           bigint,
+	OUT n_mod_since_analyze  bigint,
+	OUT heap_blks_read       bigint,
+	OUT heap_blks_hit        bigint,
+	OUT idx_blks_read        bigint,
+	OUT idx_blks_hit         bigint,
+	OUT toast_blks_read      bigint,
+	OUT toast_blks_hit       bigint,
+	OUT tidx_blks_read       bigint,
+	OUT tidx_blks_hit        bigint
+) RETURNS SETOF record AS
+$$
+	SELECT
+		pg_catalog.to_char(s.time, 'YYYY-MM-DD HH24:MI'),
+		t.database,
+		t.schema,
+		t.table,
+		t.reltuples,
+		t.size,
+		t.seq_scan,
+		t.seq_tup_read,
+		t.idx_scan,
+		t.idx_tup_fetch,
+		t.n_tup_ins,
+		t.n_tup_upd,
+		t.n_tup_del,
+		t.n_tup_hot_upd,
+		t.n_live_tup,
+		t.n_dead_tup,
+		t.n_mod_since_analyze,
+		t.heap_blks_read,
+		t.heap_blks_hit,
+		t.idx_blks_read,
+		t.idx_blks_hit,
+		t.toast_blks_read,
+		t.toast_blks_hit,
+		t.tidx_blks_read,
+		t.tidx_blks_hit
+	FROM
+		statsrepo.tables t,
+		statsrepo.snapshot s
+	WHERE
+		s.snapid BETWEEN $1 AND $2
+		AND s.snapid = t.snapid
+	ORDER BY
+		s.time, t.database, t.schema, t.table;
+$$
+LANGUAGE sql;
+
 -- generate information that corresponds to 'Hash table statistics information'
 CREATE FUNCTION statsrepo.get_ht_info(
     IN snapid_begin         bigint,
