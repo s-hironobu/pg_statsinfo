@@ -25,7 +25,7 @@
 5.  [アンインストール](#アンインストール)
 6.  [使用上の注意と制約](#使用上の注意と制約)
 7.  [よくあるQ&A](#よくあるqa)
-8.  [pg_statsinfo13からの変更点](#pg_statsinfo13からの変更点)
+8.  [pg_statsinfo14からの変更点](#pg_statsinfo14からの変更点)
 9.  [詳細情報](#詳細情報)
     1.  [複数の監視対象インスタンス](#複数の監視対象インスタンス)
     2.  [フォールバックモード](#フォールバックモード)
@@ -35,7 +35,7 @@
 
 </div>
 
-# pg_statsinfo 14
+# pg_statsinfo 15
 
 ## pg_statsinfoとは
 
@@ -43,7 +43,7 @@ PostgreSQL サーバの利用統計情報を定期的に収集・蓄積するこ
 性能劣化などの兆候や問題発生時の原因の把握等)に役立つツールです。  
 起動や終了、パラメータの設定は PostgreSQL と密に連携しており、手間をかけずに導入可能です。
 
-pg_statsinfo 14 の変更点は[こちら](#pg_statsinfo13からの変更点)をご覧ください。
+pg_statsinfo 15 の変更点は[こちら](#pg_statsinfo14からの変更点)をご覧ください。
 
 pg_statsinfo 14 以降は GitHub にて公開しています。pg_statsinfo 13 以前の情報については、[SourceForge](http://pgstatsinfo.sourceforge.net/index_ja.html)をご覧ください。
 
@@ -94,7 +94,7 @@ pg_statsinfo のシステム構成例と動作概要のイメージ図を以下�
 
 スナップショットとして以下の統計情報を収集します。
 
-  - [統計情報コレクタ](https://www.postgresql.jp/document/14/html/monitoring-stats.html)が収集する全ての情報。挿入
+  - [統計情報コレクタ](https://www.postgresql.jp/document/15/html/monitoring-stats.html)が収集する全ての情報。挿入
     / 更新 / 削除行数やバッファアクセス回数。
   - テーブルスペース、WAL領域、アーカイブログ領域のディスク使用量。
   - ロングトランザクション化しているクエリ。
@@ -117,20 +117,22 @@ pg_statsinfo のシステム構成例と動作概要のイメージ図を以下�
 
 #### リポジトリDBのテーブル構成
 
-リポジトリDBのテーブル構成に関しては、「[pg_statsinfo v14
-リポジトリDB構成](https://github.com/ossc-db/pg_statsinfo/blob/14.0/doc/files/pg_statsinfo_v14_report_infomation.xls)」を参照してください。
+リポジトリDBのテーブル構成に関しては、「[pg_statsinfo v15
+リポジトリDB構成](https://github.com/ossc-db/pg_statsinfo/blob/15.0/doc/files/pg_statsinfo_v15_report_infomation.xls)」を参照してください。
 
 ### サーバログ分配機能
 
-PostgreSQL が出力するサーバログをCSVログ、テキストログ、syslog に分配して出力します。
+PostgreSQL が出力するサーバログをCSVログファイル、テキストログファイル、syslog に分配して出力します。
 
-  - メッセージレベル (エラー種別) に応じたサーバログの分配。CSVログ、テキストログ、syslog に個別で出力閾値を設定できます。
-  - テキストログのファイル名を固定。常に同じ名前 (デフォルト pg_statsinfo.log)
-    で最新のサーバログを閲覧でき、ログ監視ソフトウェアとの連携が容易になります。
-  - テキストログファイルのアクセス権の設定。テキストログのファイル権限を 600 以外にも設定できるため、運用が柔軟になります。
-  - テキストログ、syslog に出力されるサーバログのメッセージレベルを任意のレベルに変更可能。例えば、オペレーションミスなどで発生する
-    ERROR レベルのログを INFO レベルに変更して出力できます。
-  - テキストログのフィルタリング設定。特定のユーザのサーバログをテキストログに出力しないようにすることができます。
+  - フィルタリング機能：
+      - CSVログファイル、テキストログファイル、syslogへの出力は、それぞれ指定されたメッセージレベル(エラー種別)以上に制限できます。
+      - テキストログファイルについては、指定されたユーザのログの出力を制限できます。
+  - テキストログファイルの設定：
+      - ファイル作成時のファイル名を指定できます(デフォルト pg_statsinfo.log)。最新のログデータはこのファイルに格納されるため、ログ監視ソフトウェアとの連携が容易になります。
+      - アクセス権を指定できます。デフォルトは 600 ですが任意に指定できるため、運用が柔軟になります。
+  - メッセージレベルの変更機能：
+      - テキストログファイル、syslog への出力の際には、メッセージレベルを任意のレベルに変更できます。例えば、オペレーションミスなどで発生する ERROR レベルのログを INFO レベルに変更して出力できます。
+
 
 ### サーバログ蓄積機能
 
@@ -142,7 +144,7 @@ PostgreSQL が出力するサーバログを収集し、リポジトリDBに蓄�
 
 ### アラート機能
 
-監視対象インスタンスの状態を定期的 (スナップショット取得時) にチェックし、問題を検知した場合にアラートメッセージをテキストログに出力します。
+監視対象インスタンスの状態を定期的 (スナップショット取得時) にチェックし、問題を検知した場合にアラートメッセージをテキストログファイルに出力します。
 アラートメッセージは、メッセージレベル "ALERT"
 で出力されます。なお、アラート機能で検出したアラートの内容は、リポジトリDBにも蓄積されます。
 
@@ -161,12 +163,15 @@ PostgreSQL が出力するサーバログを収集し、リポジトリDBに蓄�
   - テーブルスペースのディスク空き容量 (%)
   - ロードアベレージ
   - スワップ使用量 (KB)
-  - レプリケーションの遅延量 (MB)
+  - レプリケーションの遅延量<sup>(*2)</sup> (MB)
 
 (*1) テーブルの相関係数は、クラスタ化テーブル(クラスタインデックスが存在するテーブル)を対象に判定が行われます。
 
-各アラート項目のアラートメッセージの内容については「[pg_statsinfo v14
-レポート項目一覧](https://github.com/ossc-db/pg_statsinfo/blob/14.0/doc/files/pg_statsinfo_v14_report_infomation.xls)」をご覧ください。
+(*2)
+レプリケーションの遅延量のチェックでは、スタンバイの停止などでレプリケーションが終了している間、アラートメッセージは出力されなくなります。
+
+各アラート項目のアラートメッセージの内容については「[pg_statsinfo v15
+レポート項目一覧](https://github.com/ossc-db/pg_statsinfo/blob/15.0/doc/files/pg_statsinfo_v15_report_infomation.xls)」をご覧ください。
 
 アラート機能の設定方法は[こちら](#アラート機能の設定方法)をご覧ください。
 
@@ -184,8 +189,8 @@ PostgreSQL が出力するサーバログを収集し、リポジトリDBに蓄�
   - スナップショットの合計サイズの表示
 
 
-簡易レポート機能が出力するレポートの項目については「[pg_statsinfo v14
-レポート項目一覧](https://github.com/ossc-db/pg_statsinfo/blob/14.0/doc/files/pg_statsinfo_v14_report_infomation.xls)」をご覧ください。  
+簡易レポート機能が出力するレポートの項目については「[pg_statsinfo v15
+レポート項目一覧](https://github.com/ossc-db/pg_statsinfo/blob/15.0/doc/files/pg_statsinfo_v15_report_infomation.xls)」をご覧ください。  
 なお、簡易レポート機能が出力するレポートの項目は
 [pg_stats_reporter](https://github.com/ossc-db/pg_stats_reporter)
 と同等です。  
@@ -229,10 +234,11 @@ pg_statsinfo
 ### 動作環境
 
   - PostgreSQL  
-    バージョン 14
+    バージョン 15
   - 動作検証済みOS  
-    RHEL 7.x (x86_64), CentOS 7.x (x86_64)
-    RHEL 8.x (x86_64), CentOS 8.x (x86_64)
+    RHEL 7.x (x86_64), CentOS 7.x (x86_64)  
+    RHEL 8.x (x86_64), Rocky Linux 8.x (x86_64)  
+    RHEL 9.x (x86_64), Rocky Linux 9.x (x86_64)  
 
 ### インストール手順
 
@@ -240,17 +246,20 @@ pg_statsinfo
 
 ##### RHEL 7
 
-以下はPostgreSQL14のRHEL7のx86\64用のrpmをインストールする例です。
+以下はPostgreSQL15のRHEL7のx86_64用のrpmをインストールする例です。
 
     $ su
-    # yum install pg_statsinfo-14.0-1.pg14.rhel7.x86_64.rpm
+    # yum install pg_statsinfo-15.0-1.pg15.rhel7.x86_64.rpm
 
-##### RHEL 8
 
-以下はPostgreSQL14のRHEL8のx86_64用のrpmをインストールする例です。
+##### RHEL 8, RHEL 9
+
+以下はPostgreSQL15のRHEL8のx86_64用のrpmをインストールする例です。
 
     $ su
-    # dnf install pg_statsinfo-14.0-1.pg14.rhel8.x86_64.rpm
+    # dnf install pg_statsinfo-15.0-1.pg15.rhel8.x86_64.rpm
+
+    ※ OSのバージョン部分は適宜読み替えてください
 
 #### source
 
@@ -259,8 +268,8 @@ pg_statsinfo
 監視対象インスタンス、リポジトリDB共に、初回起動時に必要に応じて
 エージェントがスキーマを自動的にインストールします。
 
-    $ tar xzvf pg_statsinfo-14.0.tar.gz
-    $ cd pg_statsinfo-14.0
+    $ tar xzvf pg_statsinfo-15.0.tar.gz
+    $ cd pg_statsinfo-15.0
     $ make USE_PGXS=1
     $ su
     # make USE_PGXS=1 install
@@ -295,7 +304,7 @@ contrib/pg_statsinfo.sql、contrib/pg_statsrepo.sqlは自動的にインスト�
     log_min_messages = 'log'                        # ログへ出力するメッセージレベル。 
     pg_statsinfo.syslog_min_messages = 'error'      # syslogに出力するログレベルを指定する。
     pg_statsinfo.textlog_line_prefix = '%t %p %c-%l %x %q(%u, %d, %r, %a) '
-       # pg_statsinfoがテキストログに出力する際、各行の先頭に追加される書式を指定する。log_line_prefixと同じ形式で指定する。
+       # pg_statsinfoがテキストログファイルに出力する際、各行の先頭に追加される書式を指定する。log_line_prefixと同じ形式で指定する。
     pg_statsinfo.syslog_line_prefix = '%t %p %c-%l %x %q(%u, %d, %r, %a) '
        # pg_statsinfoがsyslog経由でログを出力する際、各行の先頭に追加される書式を指定する。
     
@@ -317,7 +326,7 @@ pg_statsinfo は以下の設定を強制的に上書きすることに注意し�
 
 PostgreSQL 起動ユーザでの localhost からのアクセスではパスワードの入力が不要になるよう設定します。 この際の認証には
 ident 方式を推奨します。 一般的によく利用される「OSユーザ名 = DB管理者名 =
-postgres」の場合には、[pg_hba.conf](https://www.postgresql.jp/document/14/html/auth-pg-hba-conf.html)
+postgres」の場合には、[pg_hba.conf](https://www.postgresql.jp/document/15/html/auth-pg-hba-conf.html)
 に以下を追加します。 他の認証方式よりも優先するため、ファイルの最初のほうに書く必要があることに注意してください。 UNIX 環境では
 TYPE=local の ident
     認証を使うのが手軽です。
@@ -328,7 +337,7 @@ TYPE=local の ident
 #### クエリの統計情報の取得設定
 
 監視対象インスタンスの postgres データベースに
-[pg_stat_statements](https://www.postgresql.jp/document/14/html/pgstatstatements.html)
+[pg_stat_statements](https://www.postgresql.jp/document/15/html/pgstatstatements.html)
 をインストールすることで、クエリの統計情報もスナップショットとして収集できるようになります。  
 利用する場合には、postgresql.conf の shared_preload_libraries に
 pg_stat_statements を追加し、初回起動時に以下の手順で登録してください。
@@ -392,6 +401,8 @@ pg_statsinfo の操作方法と各種設定について説明します。
 **(注1) PostgreSQLの設定パラメータに「shared_preload_libraries =
 'pg_statsinfo'」が設定されていない場合は、エージェントの停止／起動が実行できません。**
 
+**(注2) pg_statsinfo --stopでエージェントのみが停止している場合、PostgresSQL サーバの再起動によってもエージェントは起動します**
+
 ### スナップショットの取得・削除
 
 #### 自動取得
@@ -438,31 +449,26 @@ statsinfo.snapshot(text DEFAULT NULL) を実行して下さい。
 pg_statsinfo には PostgreSQL のサーバログをフィルタリングにより加工する機能があります。  
 以下では、出力されるログファイルの種類とフィルタリングの種類を説明します。
 
+
 #### ログファイルの種類
 
-  - CSVログ (*.csv) (例: postgresql-2013-10-01_000000.csv)  
-    CSVログとは、PostgreSQL
-    が出力する生のログとなります。(CSVログの詳細は[こちら](https://www.postgresql.jp/document/14/html/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-CSVLOG)をご覧ください)
-    pg_statsinfo は本ログの情報を元に加工したログの出力を行いますが、本ログに関しては全く加工を行いません。
-  - テキストログ (pg_statsinfo.log)  
-    テキストログとは、PostgreSQL が出力したログ(CSVログ)の情報を元に pg_statsinfo
-    が加工を行ったログです。
-    テキストログには以下の特徴があります。
-      - テキストログの書式を任意の形式に設定することができます。
-      - テキストログのファイルアクセス権限を設定することができます。
-      - テキストログのファイル名を設定することができます。
-      - 特定のユーザのログを除外した内容で出力することができます。
-      - 特定のSQLSTATEを持つログのメッセージレベルを変更した内容で出力することができます。
-    テキストログの書式、ファイル名およびファイルアクセス権限は、設定ファイルの下記のパラメータで指定します。(詳細は[こちら](#設定ファイル)をご覧ください)
-      - pg_statsinfo.textlog_line_prefix
-      - pg_statsinfo.textlog_permission
-      - pg_statsinfo.textlog_filename
-  - 保存用テキストログ (例: postgresql-2013-10-01_000000.log)  
-    上記のテキストログをlog_filenameで定義された名前にリネームしたファイルです。ログローテート等の際に生成されます。
-
-(注1) ログローテート前に将来リネーム予定のパスに既にファイルが存在する場合がありますが、これは正常な状態です。  
-(注2)
-拡張子が「.copy」、「.err.*n*」のファイルが作成される場合があります。当該ファイルの詳細は[こちら](#サーバログ分配機能内部)を参照してください。
+  - CSVログファイル \
+    PostgreSQLがCSV書式で出力するファイルです。CSV書式の詳細は[PostgreSQLのマニュアル](https://www.postgresql.jp/document/15/html/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-CSVLOG)をご覧ください。
+    ファイル名は[設定ファイル](#設定ファイル)の log_filename で指定します。 \
+    pg_statsinfo は本ファイルの情報を入力として、テキストログファイルを作成します。一方、pg_statsinfoは本ファイルに対して出力を行いません。
+  - テキストログファイル \
+      pg_statsinfoがCSVログファイルを入力として作成します。作成時のファイル名は、デフォルトでは pg_statsinfo.log です。 \
+	ログローテートによって、入力に使用したCSVログファイルのファイル名の拡張子を「.log」に置き換えたファイル名になります。
+  
+    [設定ファイル](#設定ファイル)の各パラメータに値を設定することで、テキストログファイルに関する以下の事柄を指定できます。
+      - 作成時のファイル名：pg_statsinfo.textlog_filename
+      - ファイルアクセス権限：pg_statsinfo.textlog_permission
+      - ログの各行の先頭に追加される書式：pg_statsinfo.textlog_line_prefix
+      - ログ出力を抑制するユーザ：pg_statsinfo.textlog_nologging_user
+      - 特定のSQLSTATEを持つログのメッセージレベル：詳細は[フィルタリングの種類](#フィルタリングの種類)の節の「メッセージレベルの変更」をご覧ください
+  - PostgreSQLが実行したメンテナスコマンドの出力を書き込むファイル \
+        ファイル名はlog_filenameに指定された名称で拡張子が「.log」となります。 \
+        ログローテートの際にファイル名が変更されます([サーバログ分配機能内部](#サーバログ分配機能内部)の節をご覧ください)。
 
 ログファイルの出力例を以下に示します。
 
@@ -472,33 +478,29 @@ pg_statsinfo には PostgreSQL のサーバログをフィルタリングによ�
     -rw------- 1 postgres postgres 425449 Oct  2 23:59 postgresql-2013-10-02_000000.csv
     -rw------- 1 postgres postgres 321695 Oct  2 23:59 postgresql-2013-10-02_000000.log
     -rw------- 1 postgres postgres 255424 Oct  3 13:40 postgresql-2013-10-03_000000.csv
-    -rw------- 1 postgres postgres      0 Oct  3 00:00 postgresql-2013-10-03_000000.log
     -rw------- 1 postgres postgres 190786 Oct  3 13:40 pg_statsinfo.log
-    
-    postgresql-2013-10-01_000000.csv ... ログローテート済みのCSVログ
-    postgresql-2013-10-01_000000.log ... ログローテート済みのテキストログ (上記のCSVログの情報を元に加工したログ)
-    postgresql-2013-10-02_000000.csv ... ログローテート済みのCSVログ
-    postgresql-2013-10-02_000000.log ... ログローテート済みのテキストログ (上記のCSVログの情報を元に加工したログ)
-    postgresql-2013-10-03_000000.csv ... 最新のCSVログ
-    postgresql-2013-10-03_000000.log ... コンソールログ
-    pg_statsinfo.log ................... テキストログ (最新のCSVログの情報を元に加工したログ)
+
 
 #### フィルタリングの種類
 
   - メッセージレベルによる出力制御  
-    特定のメッセージレベルより低いレベルのログをテキストログに出力しないようにフィルタリングします。
+    特定のメッセージレベルより低いレベルのログをテキストログファイルに出力しないようにフィルタリングします。
     特定のメッセージレベルは、設定ファイル(postgresql.conf)の下記のパラメータで指定します。
     設定の詳細については、[設定ファイル](#設定ファイル)をご覧ください。
       - pg_statsinfo.textlog_min_messages
-    設定例: warning 以上のメッセージレベルのログをテキストログに出力する
+    
+    設定例: warning 以上のメッセージレベルのログをテキストログファイルに出力する
+    
         pg_statsinfo.textlog_min_messages = warning
   - 特定ユーザのセッションのログの出力制御  
-    特定ユーザのセッションのログをテキストログに出力しないようにフィルタリングします。
+    特定ユーザのセッションのログをテキストログファイルに出力しないようにフィルタリングします。
     特定ユーザは、設定ファイル(postgresql.conf)の下記のパラメータで指定します。
     設定の詳細については、[設定ファイル](#設定ファイル)をご覧ください。
       - pg_statsinfo.textlog_nologging_users
+    
     設定例: postgres
-    ユーザのセッションのログをテキストログに出力しない
+    ユーザのセッションのログをテキストログファイルに出力しない
+    
         pg_statsinfo.textlog_nologging_users = 'postgres'
   - メッセージレベルの変更  
     特定のSQLSTATEを持つログのメッセージレベルを任意のメッセージレベルに変更します。
@@ -511,12 +513,14 @@ pg_statsinfo には PostgreSQL のサーバログをフィルタリングによ�
       - pg_statsinfo.adjust_log_error
       - pg_statsinfo.adjust_log_log
       - pg_statsinfo.adjust_log_fatal
+    
     設定例: SQLSTATEが '42P01' のログのメッセージレベルを 'INFO' に変更する
+    
         pg_statsinfo.adjust_log_level = on
         pg_statsinfo.adjust_log_info = '42P01'
-
-(注1) メッセージレベルの変更は、サーバログ分配とサーバログ蓄積で共通です。  
-(注2) メッセージレベルの変更をサーバログ分配とサーバログ蓄積で個別に設定することはできません。
+    
+    (注1) メッセージレベルの変更は、サーバログ分配とサーバログ蓄積で共通です。  
+    (注2) メッセージレベルの変更をサーバログ分配とサーバログ蓄積で個別に設定することはできません。
 
 #### 自動メンテナンス機能によるログファイル整理
 
@@ -537,18 +541,27 @@ pg_statsinfo には PostgreSQL のサーバログをフィルタリングによ�
     制限するメッセージレベルは、設定ファイル(postgresql.conf)の下記のパラメータで指定します。
     設定の詳細については、[設定ファイル](#設定ファイル)をご覧ください。
       - pg_statsinfo.repolog_min_messages
+    
     設定例: warning 以上のメッセージレベルのログを蓄積する
+    
         pg_statsinfo.repolog_min_messages = warning
+    
     なお、当該パラメータに "disable" を指定することでサーバログの蓄積を無効化することができます。
+    
     設定例: サーバログの蓄積を無効化する
+    
         pg_statsinfo.repolog_min_messages = disable
+
   - 特定ユーザのログの蓄積制限  
     特定ユーザのセッションのログを蓄積しないように制限します。
     特定ユーザは、設定ファイル(postgresql.conf)の下記のパラメータで指定します。
     設定の詳細については、[設定ファイル](#設定ファイル)をご覧ください。
       - pg_statsinfo.repolog_nologging_users
+    
     設定例: postgres ユーザのセッションのログを蓄積しない
+    
         pg_statsinfo.repolog_nologging_users = 'postgres'
+
   - メッセージレベルの変更  
     特定のSQLSTATEを持つログのメッセージレベルを任意のメッセージレベルに変更します。
     メッセージレベルの変更は、サーバログ分配とサーバログ蓄積で共通です。
@@ -574,9 +587,10 @@ pg_statsinfo には PostgreSQL のサーバログをフィルタリングによ�
 
 ### アラート機能の設定方法
 
-アラート条件(閾値)は、アラート設定テーブル(リポジトリDBの「statsrepo.alert」テーブル)で管理します。  
-各設定カラムの値を -1
-に設定することで項目単位でアラートを無効にできます。
+アラート条件(閾値)は、アラート設定テーブル(リポジトリDBの「statsrepo.alert」テーブル)で管理します。
+
+監視対象インスタンスからリポジトリDBに初回アクセスすると、そのインスタンスのアラート設定の行がアラート設定テーブルに追加されます。この行の各値を更新することによって、監視対象インスタンスごとのアラート設定を行うことができます。  
+各設定カラムの値を -1に設定することで項目単位でアラートを無効にできます。
 
 アラート設定テーブルのスキーマ構成を以下に示します。
 
@@ -604,7 +618,13 @@ pg_statsinfo には PostgreSQL のサーバログをフィルタリングによ�
 設定変更の例:
 秒間ロールバック数の閾値を「3000」に変更する場合
 
-    # UPDATE statsrepo.alert SET rollback_tps = 3000 WHERE instid = <変更対象の監視対象インスタンスID>
+
+    # UPDATE statsrepo.alert SET rollback_tps = 3000
+      WHERE instid = (SELECT instid
+                        FROM statsrepo.instance
+                       WHERE hostname = <変更対象の監視対象インスタンスのホスト名>
+                         AND port = <変更対象の監視対象インスタンスのポート番号> )
+
 
 このテーブルの行を削除すると、該当する監視対象インスタンスのアラート機能が無効になります。このアラートを有効にするためには新たな行を挿入する必要があります。
 
@@ -636,8 +656,8 @@ enable_alert カラムで行います。デフォルト値はpg_statsinfo.enable
   - -r, --report=REPORTID  
     レポート種別IDを指定します。
     レポート種別IDに指定できる値は以下のとおりです。
-    レポート種別IDとレポートの内容についての対応は「[pg_statsinfo v14
-    レポート項目一覧](https://github.com/ossc-db/pg_statsinfo/blob/14.0/doc/files/pg_statsinfo_v14_report_infomation.xls)」をご覧ください。
+    レポート種別IDとレポートの内容についての対応は「[pg_statsinfo v15
+    レポート項目一覧](https://github.com/ossc-db/pg_statsinfo/blob/15.0/doc/files/pg_statsinfo_v15_report_infomation.xls)」をご覧ください。
       - Summary
       - Alert
       - DatabaseStatistics
@@ -655,6 +675,7 @@ enable_alert カラムで行います。デフォルト値はpg_statsinfo.enable
       - SchemaInformation
       - Profiles
       - All
+    
     レポート種別IDは、頭文字からの最短一致での指定を許容し、大文字と小文字を区別しません。
   - \-i, --instid=INSTANCEID  
     レポート対象とする監視対象インスタンスの識別子を指定します。
@@ -803,7 +824,10 @@ enable_alert カラムで行います。デフォルト値はpg_statsinfo.enable
   - \-W, --password  
     データベースに接続する前に、強制的にパスワード入力を促します。
 
-  
+
+#### 終了ステータス
+
+pg_statsinfoコマンドは、正常に終了した時には0を、それ以外の時には0以外を返します。
 
 ### 自動メンテナンス機能の使い方
 
@@ -909,10 +933,10 @@ pg_statsinfo を利用するために必須のパラメータは以下です。 
 | 設定項目                       | 設定値                                      | 説明                                                                                                                                                                           |
 | -------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | shared_preload_libraries | 'pg_statsinfo'                          | 事前読込み用のライブラリの指定。 pg_stat_statements、pg_store_plans を併用する場合は 'pg_stat_statements, pg_store_plans, pg_statsinfo, ' のようにカンマ区切りで指定します。                                    |
-| log_filename              | 'postgresql-%Y-%m-%d_%H%M%S.log'        | CSVログおよびテキストログのファイル名。デフォルトから変更する場合でも、%Y, %m, %d, %H, %M, %S がこの順に全て表れる形式でなければなりません。                                                                                          |
+| log_filename              | 'postgresql-%Y-%m-%d_%H%M%S.log'        | CSVログファイルおよびテキストログファイルのファイル名。デフォルトから変更する場合でも、%Y, %m, %d, %H, %M, %S がこの順に全て表れる形式でなければなりません。                                                                                          |
 | track_counts              | on                                       | データベースの活動に関する統計情報の収集設定。                                                                                                                                                      |
 | track_activities          | on                                       | セッションで実行中のコマンドに関する情報の収集設定。                                                                                                                                                   |
-| log_min_messages         | debug5 ~ log                             | ログへ出力するメッセージレベル。 'log', pg_statsinfo.syslog_min_messages, pg_statsinfo.textlog_min_messages, pg_statsinfo.repolog_min_messages のいずれの設定よりも、より多くを出力するレベルを設定する必要があります。 |
+| log_min_messages         | debug5 ~ log                             | ログへ出力するメッセージレベル。左の値のいずれかを推奨します。<br>但し pg_statsinfo.syslog_min_messages, pg_statsinfo.textlog_min_messages, pg_statsinfo.repolog_min_messages それぞれのレベル以下とする必要があります。 |
 | log_destination           | 'csvlog' 必須 / 'syslog', 'eventlog' を追加可能 | 他の値であっても、エージェント起動時に強制的に 'csvlog' が追加され、'stderr' は除去されます。                                                                                                                     |
 | logging_collector         | on                                       | 他の値であっても、エージェント起動時に強制的にこの値に設定されます。                                                                                                                                           |
 
@@ -930,19 +954,21 @@ pg_statsinfo を利用するために確認が推奨されるパラメータは�
 | track_io_timing                              | off                                        | ブロックの読み込みと書き込み時間に関する統計情報の収集設定。 ブロックの読み書きに関する統計情報を収集する場合は on を設定します。 <br> 本パラメータを on に設定した場合、現時点の時刻をオペレーティングシステムに繰り返し問い合わせるので、プラットフォームによっては深刻な負荷の原因になる可能性がある点を留意してください。 |
 | log_checkpoints                              | off                                        | チェックポイント状況のサーバログ出力。on を推奨します。                                                                                                                                                                   |
 | log_autovacuum_min_duration                  | -1                                         | 自動バキューム状況のサーバログ出力。0 ~ 1min を推奨します。                                                                                                                                                              |
-| log_directory                                | 'log'                                      | CSVログおよびテキストログの出力先ディレクトリ。                                                                                                                                                                       |
+| log_directory                                | 'log'                                      | CSVログファイルおよびテキストログファイルの出力先ディレクトリ。                                                                                                                                                                       |
 | log_rotation_age                             | 1d                                         | ログローテート設定 (期間によるログファイル切替)。                                                                                                                                                                      |
 | log_rotation_size                            | 10MB                                       | ログローテート設定 (容量によるログファイル切替)。                                                                                                                                                                      |
 | syslog_facility                              | 'LOCAL0'                                   | syslog の facility 指定。                                                                                                                                                                           |
 | syslog_ident                                 | 'postgres'                                 | syslog の indent文字列指定。                                                                                                                                                                           |
 | pg_stat_statements.track_planning            | off                                        | クエリの統計情報で"実行計画生成時間"を取得する場合は on を設定します。                                                                                                                                                          |
-| pg_statsinfo.textlog_min_messages            | warning                                    | テキストログへ出力する最小メッセージレベル [(*1)](#1_設定ファイル_メッセージレベル)                                                                                                                                                                     |
+| pg_stat_statements.save                      | on                                         | クエリの実行時の統計情報をPostgreSQLの停止・起動をまたがって記録しておくかを設定します。|
+| pg_store_plans.save                          | on                                         | 実行計画の統計情報をPostgreSQLの停止・起動をまたがって記録しておくかを設定します。|
+| pg_statsinfo.textlog_min_messages            | warning                                    | テキストログファイルへ出力する最小メッセージレベル [(*1)](#1_設定ファイル_メッセージレベル)                                                                                                                                                                     |
 | pg_statsinfo.syslog_min_messages             | disable                                    | syslog へ出力する最小メッセージレベル [(*1)](#1_設定ファイル_メッセージレベル)                                                                                                                                                                    |
-| pg_statsinfo.textlog_filename                | 'pg_statsinfo.log'                         | テキストログファイル名。空文字はエラー。                                                                                                                                                                            |
-| pg_statsinfo.textlog_line_prefix             | '%t %p '                                   | テキストログの各行の先頭に追加される書式 [(*2)](#2_設定ファイル_書式指定)                                                                                                                                                                       |
+| pg_statsinfo.textlog_filename                | 'pg_statsinfo.log'                         | テキストログファイル名。  このファイルは必ず作成されるため、ファイル名に空文字は指定できません。                                                                                                                                                                           |
+| pg_statsinfo.textlog_line_prefix             | '%t %p '                                   | テキストログファイルの各行の先頭に追加される書式 [(*2)](#2_設定ファイル_書式指定)                                                                                                                                                                       |
 | pg_statsinfo.syslog_line_prefix              | '%t %p '                                   | syslog の各行の先頭に追加される書式 [(*2)](#2_設定ファイル_書式指定). syslog がデフォルトで付与する時刻とプロセスIDは、エージェントのものに置き換わってしまうため、元の値を記録するために %t や %p が必要なことに注意してください。                                                                             |
 | pg_statsinfo.textlog_permission              | 600                                        | テキストログファイルのパーミッション指定。                                                                                                                                                                           |
-| pg_statsinfo.textlog_nologging_users         | -                                          | テキストログのフィルタリング設定。テキストログへの出力を除外するユーザを設定します。複数のユーザを設定する場合はカンマ区切りで指定します。                                                                                                                           |
+| pg_statsinfo.textlog_nologging_users         | -                                          | テキストログファイルのフィルタリング設定。テキストログファイルへの出力を除外するユーザを設定します。複数のユーザを設定する場合はカンマ区切りで指定します。                                                                                                                           |
 | pg_statsinfo.repolog_min_messages            | warning                                    | リポジトリDBに蓄積するサーバログの最小メッセージレベル。[(*1)](#1_設定ファイル_メッセージレベル) <br> 監視対象DBとリポジトリDBが同一インスタンスの場合には disable (無効)にすることを推奨します |
 | pg_statsinfo.repolog_nologging_users         | -                                          | サーバログ蓄積のフィルタリング設定。リポジトリDBへの蓄積を除外するユーザを設定します。複数のユーザを設定する場合はカンマ区切りで指定します。                                                                                                                         |
 | pg_statsinfo.repolog_buffer                  | 10000                                      | サーバログ蓄積機能のチューニング設定。バッファリングするログレコード数を指定します。                                                                                                                                                      |
@@ -963,7 +989,7 @@ pg_statsinfo を利用するために確認が推奨されるパラメータは�
 | pg_statsinfo.maintenance_time                | '00:02:00'                                 | 自動メンテナンス実行時刻設定。                                                                                                                                                                                 |
 | pg_statsinfo.repository_keepday              | 7                                          | スナップショットの保持期間設定。                                                                                                                                                                                |
 | pg_statsinfo.repolog_keepday                 | 7                                          | 蓄積ログの保持期間設定。                                                                                                                                                                                    |
-| pg_statsinfo.log_maintenance_command         | \<PGHOME\>/bin/archive_pglog.sh %l         | サーバログのログファイルの整理を実行するシェルコマンドを指定します。文字列内に'%l'を記述した場合は'%l'がログファイル格納ディレクトリの絶対パスに置き換わります。シェルコマンドは正常にコマンドが終了した場合にのみ正常終了値(0)を返してください。                                                                  |
+| pg_statsinfo.log_maintenance_command         | \<PGHOME\>/bin/archive_pglog.sh %l         | サーバログのログファイルの整理を実行するシェルコマンドを指定します。文字列内に'%l'を記述した場合は'%l'がログファイル格納ディレクトリの絶対パスに置き換わります。シェルコマンドは正常にコマンドが終了した場合にのみ正常終了値(0)を返してください。[(*6)](#6_設定ファイル_log_maintenance_command)  |
 | pg_statsinfo.long_lock_threshold             | 30s                                        | ロック競合情報の収集対象とする条件(閾値)。スナップショットの時点で発生しているロック競合の内、ロック待ちの経過時間(秒)が閾値を越えているものが収集対象となります。                                                                                                             |
 | pg_statsinfo.stat_statements_max             | 30                                         | pg_stat_statements、pg_store_plansで収集する情報数の上限。                                                                                                                                                   |
 | pg_statsinfo.stat_statements_exclude_users   | -                                          | pg_stat_statements、pg_store_plansで収集する情報のフィルタリング設定。収集対象から除外するユーザを設定します。複数のユーザを設定する場合はカンマ区切りで指定します。                                                                                              |
@@ -973,49 +999,53 @@ pg_statsinfo を利用するために確認が推奨されるパラメータは�
 | pg_statsinfo.target_server                   | -                                          | 監視対象DBへの接続文字列 [(*4)](#4_設定ファイル_接続文字列)。pg_statsinfoは統計情報収集などのために監視対象DBへ接続します。 デフォルトではこの接続にDBクラスタ作成時の初期ユーザおよび初期データベース(postgres)が使用されます。 この接続設定を変更する必要がある場合には当該パラメータを設定します。なお、ユーザを指定する場合はスーパユーザを指定する必要があることに注意してください。 |
 | pg_statsinfo.rusage_max                   | 5000                                          | クエリ単位でのリソース消費量を取得するための情報数の上限。pg_stat_statements.maxと同値を設定することを推奨します。このパラメータ変更にはPostgreSQLの再起動が必要となります。 |
 | pg_statsinfo.rusage_track                 | on                                          | クエリ単位のリソース消費取得の有効/無効を設定します。 |
-| pg_statsinfo.rusage_track_utility         | off                                          | rusage_trackが有効な場合に、COPY処理などのユーティリティコマンドのリソース消費取得の有効/無効を設定します。[(*6)](#6_設定ファイル_rusage_track_utility) |
+| pg_statsinfo.rusage_track_utility         | off                                          | rusage_trackが有効な場合に、COPY処理などのユーティリティコマンドのリソース消費取得の有効/無効を設定します。[(*7)](#7_設定ファイル_rusage_track_utility) |
 | pg_statsinfo.rusage_track_planning         | off                                          | rusage_trackが有効な場合に、クエリ処理の実行計画作成時のリソース消費取得の有効/無効を設定します。 |
 | pg_statsinfo.rusage_save         | on                                          | クエリ単位のリソース情報をPostgreSQLの停止・起動をまたがって記録しておくかを設定します。 |
 | pg_statsinfo.wait_sampling_max         | 25000                                          | 待機イベントの情報数の上限。pg_stat_statements.max * 10 程度の値に設定することを推奨します。このパラメータ変更にはPostgreSQLの再起動が必要となります。  |
 | pg_statsinfo.wait_sampling_queries         | on                                          | 待機イベントの情報取得時のクエリID情報付与の有効/無効を設定します。 |
 | pg_statsinfo.wait_sampling_save         | on                                          | 待機イベントの情報をPostgreSQLの停止・起動をまたがって記録しておくかを設定します。 |
-| pg_statsinfo.wait_sampling_interval         | 10ms                                          | 待機イベント情報のサンプリング間隔 [(*7)](#7_設定ファイル_時間指定ミリ秒) |
-| pg_statsinfo.collect_column         | on                                          | スナップショット取得時にテーブルの列情報の取得の有効/無効を設定します。offにすると列情報が収集されなくなり、スナップショットサイズの削減が可能ですが、一部の情報がレポートされなくなります。[(*8)](#8_設定ファイル_レポート不可となる項目)  |
-| pg_statsinfo.collect_index         | on                                          | スナップショット取得時にインデックス情報の取得の有効/無効を設定します。offにすると列情報が収集されなくなり、スナップショットサイズの削減が可能ですが、一部の情報がレポートされなくなります。[(*8)](#8_設定ファイル_レポート不可となる項目)  |
+| pg_statsinfo.wait_sampling_interval         | 10ms                                          | 待機イベント情報のサンプリング間隔 [(*8)](#8_設定ファイル_時間指定ミリ秒) |
+| pg_statsinfo.collect_column         | on                                          | スナップショット取得時にテーブルの列情報の取得の有効/無効を設定します。offにすると列情報が収集されなくなり、スナップショットサイズの削減が可能ですが、一部の情報がレポートされなくなります。[(*9)](#9_設定ファイル_レポート不可となる項目)  |
+| pg_statsinfo.collect_index         | on                                          | スナップショット取得時にインデックス情報の取得の有効/無効を設定します。offにすると列情報が収集されなくなり、スナップショットサイズの削減が可能ですが、一部の情報がレポートされなくなります。[(*9)](#9_設定ファイル_レポート不可となる項目)  |
 
 
 
   - ##### 1_設定ファイル_メッセージレベル
     以下の値が指定でき、そのレベルと、それより上位のレベルのメッセージが記録されます。 全く記録しない場合には disable
     を指定します。 独自に disable, alert レベルが追加されていることと、debug
-    を区別しないことを除き、[log_min_messages](https://www.postgresql.jp/document/14/html/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHEN)
+    を区別しないことを除き、[log_min_messages](https://www.postgresql.jp/document/15/html/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-WHEN)
     と同じ優先順位です。
     disable \> alert \> panic \> fatal \> log \> error \> warning \>
     notice \> info \> debug
   - ##### 2_設定ファイル_書式指定  
     設定パラメータ
-    [log_line_prefix](https://www.postgresql.jp/document/14/html/runtime-config-logging.html#GUC-LOG-LINE-PREFIX)
+    [log_line_prefix](https://www.postgresql.jp/document/15/html/runtime-config-logging.html#GUC-LOG-LINE-PREFIX)
     と同じ形式で指定します。 log_line_prefix の値そのものは無視されることに注意して下さい。
   - ##### 3_設定ファイル_時間指定  
     単位として d(日)、h(時)、min(分)、s(秒) を指定できます。指定無しの場合は秒単位とみなします。
   - ##### 4_設定ファイル_接続文字列  
     例えば 'host=127.0.0.1 port=5432 dbname=mydb user=postgres'
     といったlibpq形式の接続情報文字列です。
-    詳細は[データベース接続制御関数](https://www.postgresql.jp/document/14/html/libpq-connect.html)のPQconnectdbを参照して下さい。
+    詳細は[データベース接続制御関数](https://www.postgresql.jp/document/15/html/libpq-connect.html)のPQconnectdbを参照して下さい。
     この他、libpq
-    が使用する環境変数の影響を受けますので、「[環境変数](https://www.postgresql.jp/document/14/html/libpq-envars.html)」も参照して下さい。
+    が使用する環境変数の影響を受けますので、「[環境変数](https://www.postgresql.jp/document/15/html/libpq-envars.html)」も参照して下さい。
     パスワードの入力待ちにならないようにする必要があります。 パスワード認証が必要な場合には、PostgreSQL インスタンス起動ユーザに
-    [.pgpass](https://www.postgresql.jp/document/14/html/libpq-pgpass.html)
+    [.pgpass](https://www.postgresql.jp/document/15/html/libpq-pgpass.html)
     を設定し、パスワードの入力を自動化してください。 この際には、host を指定しない場合は hostaddr
-    がホスト名として参照されます。詳細は「[パラメータキーワード](https://www.postgresql.jp/document/14/html/libpq-connect.html#LIBPQ-PARAMKEYWORDS)」を参照してください。
+    がホスト名として参照されます。詳細は「[パラメータキーワード](https://www.postgresql.jp/document/15/html/libpq-connect.html#LIBPQ-PARAMKEYWORDS)」を参照してください。
   - ##### 5_設定ファイル_SQLSTATE指定  
     SQLSTATE はSQL標準で規定される5文字の記号で、"42P01"
     のような形式の文字列です。複数のSQLSTATEを指定したい場合には、カンマ区切りで指定します。
-  - ##### 6_設定ファイル_rusage_track_utility
+  - ##### 6_設定ファイル_log_maintenance_command
+    指定されたコマンドの標準出力は、「PostgreSQLが実行したメンテナスコマンドの出力を書き込むファイル」に出力されます(このファイルについては[ログファイルの種類](#ログファイルの種類)の節をご覧ください)。 \
+    標準エラー出力は、pg_statsinfoによるエラーメッセージが先頭に付与されて、テキストログファイルに出力されます。ただし、コマンドが異常終了(戻り値が0以外)の場合にのみ出力されます。 \
+    指定されたコマンドが異常終了しても、pg_statsinfoは停止せず処理を継続します。
+  - ##### 7_設定ファイル_rusage_track_utility
     pg_stat_statementsをshared_preload_librariesに設定して有効にし、かつこのパラメータを有効にする場合、shared_preload_librariesには'pg_stat_statements, pg_statsinfo'のように先に(左側に)pg_stat_statementsを記述するようにしてください。そのような指定がされない場合、WARININGログが出力され、rusage_track_utilityは強制的にoffに設定されます。
-  - ##### 7_設定ファイル_時間指定ミリ秒  
+  - ##### 8_設定ファイル_時間指定ミリ秒  
     単位として d(日)、h(時)、min(分)、s(秒)、ms(ミリ秒) を指定できます。指定無しの場合はミリ秒単位とみなします。
-  - ##### 8_設定ファイル_レポート不可となる項目
+  - ##### 9_設定ファイル_レポート不可となる項目
     collect_columnをoffにした場合、「Notable TablesのCorrelation」全て、「Notable TablesのLow Density Tables」にあるLogical Pages および Logical Page Ratio(%)の2項目、および「Schema InformationのTable」にあるColumnsの項目がレポートできなくなります。
     collect_indexをoffにした場合、「Notable TablesのCorrelation」全て、および「Schema InformationのIndexes」全てがレポートできなくなります。
 
@@ -1033,7 +1063,7 @@ PostgreSQLサーバを終了させることなく postgresql.conf
 
 #### サーバログの削除
 
-不要となった古いログファイル(CSVログ、テキストログ)は定期的に削除して下さい。  
+不要となった古いログファイル(CSVログファイル、テキストログファイル)は定期的に削除して下さい。  
 不要となったログファイルの削除は手動で行うか、自動メンテナンスのログファイル整理を利用して下さい。
 
 #### インスタンス情報の削除
@@ -1094,9 +1124,6 @@ pg_statsinfo を使用する際には、以下の使用上の注意と制約が�
     そのため、設定値を変更する場合には、変更前の全てのログファイルを削除してください。
     ログファイルの新旧を名前に基づいて判断しているため、ソート順が変化するような設定変更時に動作不良を起こす可能性があります。
 
-  - pg_statsinfo.textlog_filename の制限  
-    固定ファイル名のテキストログは必須です。使わない設定にはできません。
-
   - fast 及び immediate シャットダウン時のエラーメッセージ  
     PostgreSQL サーバのシャットダウンの際、停止モードの指定が smart モード以外の場合は接続エラーが発生する場合があります。
     これは エージェントのデータベース切断を待たずにサーバがシャットダウンされるためです。
@@ -1112,8 +1139,7 @@ pg_statsinfo を使用する際には、以下の使用上の注意と制約が�
     エラーが発生した場合、スナップショット取得はリトライされます。
 
   - 複数の監視インスタンスの設定について  
-    各インスタンス毎に、データベースシステム識別子 or OSホスト名 or
-    Port番号のいずれかが異なっていない場合、複数インスタンスとして認識できません。
+    インスタンスの識別には、データベースシステム識別子、OSホスト名 、Port番号の3者を用います。いずれか一つでも異なる場合に、異なるインスタンスと識別します。
 
   - 自動メンテナンス(スナップショット削除)の注意点  
     複数の監視対象インスタンスのスナップショットを同一のリポジトリDBに蓄積する構成では、
@@ -1158,7 +1184,7 @@ pg_statsinfo を使用する際には、以下の使用上の注意と制約が�
     CST は3つの時間帯に関連付けられておりデフォルトではUS/Central(CST-6)
     となっているため、この関連付けの設定を変更せずに運用するとlog_timezone
     を
-    中国(PRC=CST+8)に設定したサーバーからのログの時刻がリポジトリDBでは14時間進んで解釈されることになります。リポジトリDBで以下のように入力と異なる時刻が表示された場合には設定が必要です。設定方法は[こちら](https://www.postgresql.jp/document/14/html/datetime-config-files.html)を参照してください。
+    中国(PRC=CST+8)に設定したサーバからのログの時刻がリポジトリDBでは14時間進んで解釈されることになります。リポジトリDBで以下のように入力と異なる時刻が表示された場合には設定が必要です。設定方法は[こちら](https://www.postgresql.jp/document/15/html/datetime-config-files.html)を参照してください。
     
         repository=$ SET TIME ZONE 'PRC'; select '2014/1/1 0:0:0 CST'::timestamptz;
               timestamptz       
@@ -1166,14 +1192,33 @@ pg_statsinfo を使用する際には、以下の使用上の注意と制約が�
          2014-01-01 14:00:00+08
         (1 row)
 
-  - AUTOVACUUM/AUTOANALYZEのキャンセル原因クエリの収集に関する制限  
-    AUTOVACUUM/AUTOANALYZEのキャンセル原因クエリはlog_min_messagesをdebug1~debug5に設定した場合のみ収集されます。
+  - 情報収集におけるlog_min_messagesの注意点  
+       - pg_pg_statsinfoで統計情報を収集するためには、log_min_messagesの値をlog以下に設定します。
+       - AUTOVACUUM/AUTOANALYZEのキャンセル原因クエリを収集するためには、log_min_messagesの値をdebug1~debug5に設定します。
+       
   - shared_preload_librariesでのモジュール指定順序
     pg_statsinfoとpg_stat_statementsを併用する場合、shared_preload_libraries = 'pg_stat_statements, pg_statsinfo'のように先に(左側に)pg_stat_statementsを記述するようにしてください。そのような指定がされない場合、以下の様なWARININGログが出力され、rusage_track_utilityは強制的にoffに設定されます。
      ```
     WARNING:  pg_statsinfo.rusage_track_utility is set to false.
     HINT:  pg_statsinfo must be loaded after pg_stat_statements when enable rusage_track_utility .
     ```
+
+  - 統計情報の保存に関する注意点  
+    以下のパラメータに関連する統計情報はメモリ上に保持されており、
+    PostgreSQLの終了時にストレージに保存されます。そのため設定値を
+    onにすることを推奨します。
+      - pg_statsinfo.rusage_save
+      - pg_statsinfo.wait_sampling_save
+      - pg_stat_statements.save
+      - pg_store_plans.save
+    
+    以下の事象があった期間を含んだレポートにおいては、それらの
+    統計情報が保存されないため、関連する値は正しく出力されません。
+      - サーバクラッシュ
+      - PostgreSQLをimmediateモードで終了
+      - killなどによるPostgreSQLやpg_statsinfodプロセスの強制終了
+      - 上記のパラメータをoffにした状態でのPostgreSQLの再起動
+  
 
   
 
@@ -1266,7 +1311,7 @@ pg_statsinfo の統計情報の取得機能は、その時点の統計情報を�
     レポート対象となる情報がスナップショットに存在しない可能性があります。
   - Schema Information  
     一部のデータベースのスキーマ情報が含まれてない場合は、該当のデータベースに接続できる設定になっているか
-    [クライアント認証](https://www.postgresql.jp/document/14/html/client-authentication.html)
+    [クライアント認証](https://www.postgresql.jp/document/15/html/client-authentication.html)
     などを確認してください。また一部の情報(TablesのColumnやIndexes)が取得されていない場合、pg_statsinfo.collect_column、pg_statsinfo.collect_indexが無効にされていないかを確認してください。
 
 #### Q8. pg_store_plans をインストールしているのにレポートでプランの統計情報が出てきません。
@@ -1295,23 +1340,18 @@ pg_statsinfo
 
   
 
-## pg_statsinfo13からの変更点
+## pg_statsinfo14からの変更点
 
-pg_statsinfo 13 からの変更点は以下の通りです。
+pg_statsinfo 14 からの変更点は以下の通りです。
 
-  - PostgreSQL 14に対応 (pg_statsinfo 14は PostgreSQL 14のみをサポートします)
-  - デフォルトでアラート機能を無効にしました。pg_statsinfo.enable_alertオプションはデフォルトでoffになりました。アラート機能を使う場合、このオプションを明示的にonまたはtrueへ変更してください。
-  - 待機イベント情報取得用の専用コレクタースレッドが稼働するようになりました。このスレッドは監視対象のインスタンスのpostgresデータベースで常時サンプリングを実施しています。またこのコレクターの制御用に新規パラメータが追加されました。
-  - クエリ単位のOSリソース情報を取得できるようになりました。pg_stat_statementsと同様にHook機能を使い、クエリ処理中のCPU時間や実IOの情報を収集します。また収集対象の制御用に新規パラメータが追加されました。
-  - パラメータで列情報、インデックス情報の収集を無効化できるようになりました。これらの情報があまり有用でないケースで、スナップショットサイズを削減したい場合に利用できます。
+  - PostgreSQL 15に対応 (pg_statsinfo 15は PostgreSQL 15のみをサポートします)
   - 収集する性能情報が増えました。
-    - pg_stat_walの情報を収集します。WALの読み書き量や時間などをレポートします。
-    - トランザクションIDの消費数を収集します。単位時間あたりのトランザクションID消費数をレポートします。
-    - autovacuumのログ情報から、WALの生成量に関する情報やIndex部分のVACUUM詳細情報を収集します。VACUUM時に書き込まれたWALの量やインデックスのVACUUM時にスキャンしたページ数や削除・回収したページ数をレポートします。
-    - pg_stat_replication_slotsの情報を収集します。ロジカルレプリケーションを利用している場合に伝搬されたデータ量やwal_senderが一時的に消費したディスクIO量をレポートします。
-    - CPUとメモリの情報を収集します。OSから見えるCPU数やクロック数、メモリサイズをレポートします。
-    - 待機イベント情報を収集します。インスタンス毎、DB毎、クエリ毎の3つで支配要因となっている待機イベントをレポートします。
-    - クエリが消費したOSリソース情報を収集します。DB毎、クエリ毎に実IO(read, write)やCPU時間(user, sys)をレポートします。
+    - autovacuumのログ情報から、クリーンアップロックの競合の詳細情報を収集します。VACUUM時にクリーンアップロックの競合で回収されなかった行数とページ数をレポートします。
+    - autovacuumのログ情報から、スキャンしたインデックスの詳細情報を収集します。VACUUM時にスキャンしたページ数と割合の平均値をレポートします。
+    - autovacuumのログ情報から、VACUUMに関与するトランザクションIDを収集します。VACUUM時のカットオフトランザクションID、凍結されたトランザクションID、最小マルチトランザクションIDをレポートします。
+    - pg_stat_statementsから、一時ファイルのブロックIO情報を収集します。クエリごとにIO(read,write)時間をレポートします。
+    - pg_store_plansから、一時ファイルのブロックIO情報を収集します。実行計画毎にIO(read,write)時間をレポートします。
+
 
 ## 詳細情報
 
@@ -1331,7 +1371,7 @@ pg_statsinfo 13 からの変更点は以下の通りです。
 
 リポジトリDBは各監視対象インスタンスから上記で設定したデータベースにパスワード入力なしに接続できる必要があります。  
 各監視対象インスタンスからリポジトリDBにパスワード入力なしに接続できるよう
-[クライアント認証](https://www.postgresql.jp/document/14/html/client-authentication.html)
+[クライアント認証](https://www.postgresql.jp/document/15/html/client-authentication.html)
 を設定してください。
 
 #### 注意事項
@@ -1342,7 +1382,8 @@ pg_statsinfo 13 からの変更点は以下の通りです。
 ### フォールバックモード
 
 エージェント起動時および設定リロード時にリポジトリDBの正当性チェックを行います。  
-正当性チェックを実施した結果、不備が検出された場合は一部の機能を無効化した状態で動作するモード(フォールバックモード)に移行します。
+正当性チェックを実施した結果、不備が検出された場合は一部の機能を無効化した状態で動作するモード(フォールバックモード)に移行します。  
+なお、フォールバックモードへの移行チェックは、起動するたびに実施されます。
 
 リポジトリDBの正当性チェックの内容およびフォールバックモードで無効化される機能を以下に示します。
 
@@ -1350,6 +1391,8 @@ pg_statsinfo 13 からの変更点は以下の通りです。
 
   - リポジトリDBに接続できるか
   - リポジトリDBに登録されている statsrepo スキーマのバージョンが正しいか
+
+リポジトリDBへの接続に関する正当性チェックは、リポジトリDBへの接続を10秒間隔で10回試行し、それでも接続できない場合はフォールバックモードへ移行します。なお、試行回数は固定されており、パラメータ設定では変更できません。また、フォールバックモード移行後も、正当性チェックは継続して施行されるため、リポジトリDBに接続できない旨のエラーメッセージなどが定期的に出力され続ける場合があります。
 
 #### フォールバックモードで無効化される機能
 
@@ -1363,12 +1406,14 @@ pg_statsinfo 13 からの変更点は以下の通りです。
 この際、フォールバックモードで動作していた期間のスナップショット取得、アラート、自動メンテナンスは補完されません。  
 また、サーバログの蓄積はフォールバックモードに移行した時点のログから補完が行われます。
 
+なお、フォールバックモード中でもサンプリング処理は定期的に実行されますが、リポジトリDBへのアクセスを伴う処理ではないため、この処理に関するエラーメッセージは出力されません。
+
 #### 復旧手順
 
 リポジトリDBに接続できないことが原因でフォールバックモードの移行した場合は、リポジトリDBを復旧した時点で自動的に通常モードに復旧します。  
 他の原因によりフォールバックモードに移行した場合は、リポジトリDBを復旧した後で設定リロードを実行してください。
 
-フォールバックモードに移行した原因はログ(テキストログ or syslog)に出力された内容から判断できます。  
+フォールバックモードに移行した原因はログ(テキストログファイル or syslog)に出力された内容から判断できます。  
 フォールバックモードに移行した時のログの出力例を以下に示します。
 
     # リポジトリDBに接続できない
@@ -1398,8 +1443,9 @@ pg_statsinfo はPostgreSQLのサーバサイドで動作する pg_statsinfo
 
 #### ログローテート発生時の挙動 (拡張子「.copy」のファイルが作成されるケース)
 
-保存用テキストログ生成の際に、同名のファイルが存在して既に内容が書かれている場合、そのファイルの名前の拡張子に「.copy」を付加します。
-これはコンソールログの内容の消失を回避するための処置です。
+テキストログファイルをログローテートする時点で、「PostgreSQLが実行したメンテナスコマンドの出力を書き込むファイル」(※)が存在して既に内容が書かれている場合、そのファイルの名前に拡張子「.copy」を付加します。  
+これは既に存在するファイルの内容の消失を回避するための処置です。 \
+(※ このファイルについては[ログファイルの種類](#ログファイルの種類)の節をご覧ください)
 
 #### 拡張子「.err.*n*」のファイルについて
 
@@ -1417,12 +1463,12 @@ pg_statsinfo](https://www.pgcon.org/2010/schedule/events/216.en.html)
   
 ### PostgreSQLドキュメント
 
-[pg_ctl](https://www.postgresql.jp/document/14/html/app-pg-ctl.html),
-[psql](https://www.postgresql.jp/document/14/html/app-psql.html),
-[サーバの構成](https://www.postgresql.jp/document/14/html/runtime-config.html),
-[統計情報コレクタ](https://www.postgresql.jp/document/14/html/monitoring-stats.html),
-[システムカタログ](https://www.postgresql.jp/document/14/html/catalogs.html),
-[pg_stat_statements](https://www.postgresql.jp/document/14/html/pgstatstatements.html),
+[pg_ctl](https://www.postgresql.jp/document/15/html/app-pg-ctl.html),
+[psql](https://www.postgresql.jp/document/15/html/app-psql.html),
+[サーバの構成](https://www.postgresql.jp/document/15/html/runtime-config.html),
+[統計情報コレクタ](https://www.postgresql.jp/document/15/html/monitoring-stats.html),
+[システムカタログ](https://www.postgresql.jp/document/15/html/catalogs.html),
+[pg_stat_statements](https://www.postgresql.jp/document/15/html/pgstatstatements.html),
 [pg_stats_reporter](https://github.com/ossc-db/pg_stats_reporter)
 
 -----
@@ -1433,7 +1479,7 @@ pg_statsinfo](https://www.pgcon.org/2010/schedule/events/216.en.html)
 
 <div>
 
-Copyright (c) 2009-2022, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
+Copyright (c) 2009-2023, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
 
 </div>
 

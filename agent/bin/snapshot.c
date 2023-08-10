@@ -1,7 +1,7 @@
 /*
  * snapshot.c:
  *
- * Copyright (c) 2009-2022, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
+ * Copyright (c) 2009-2023, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
  */
 
 #include "pg_statsinfod.h"
@@ -880,7 +880,7 @@ do_put_copy(PGconn *conn,
 			break;
 		default:
 			elog(WARNING, "Failed Copy and/or sent CopyDone Msg:%s:%s",
-							copy_errormsg, PQerrorMessage(conn) );
+							copy_errormsg ? copy_errormsg : "(null)", PQerrorMessage(conn) );
 			PQclear(res);
 			return false;
 	}

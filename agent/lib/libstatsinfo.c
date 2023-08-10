@@ -1,7 +1,7 @@
 /*
  * lib/libstatsinfo.c
  *
- * Copyright (c) 2009-2022, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
+ * Copyright (c) 2009-2023, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
  */
 #define __USER__
 #include "libstatsinfo.h"
@@ -95,9 +95,11 @@
 
 /* log_autovacuum_min_duration: vacuum */
 #define MSG_AUTOVACUUM \
-	"automatic %s of table \"%s.%s.%s\": index scans: %d\n" \
-	"pages: %u removed, %u remain, %u skipped due to pins, %u skipped frozen\n" \
-	"tuples: %lld removed, %lld remain, %lld are dead but not yet removable, oldest xmin: %u\n" \
+	"%s vacuum%s \"%s.%s.%s\": index scans: %d\n" \
+	"pages: %u removed, %u remain, %u scanned (%.2f%% of total)\n" \
+	"tuples: %lld removed, %lld remain, %lld are dead but not yet removable\n" \
+	"%s" \
+	"removable cutoff: %u, which was %d XIDs old when operation ended\n" \
 	"%s" \
 	"avg read rate: %.3f %s, avg write rate: %.3f %s\n" \
 	"buffer usage: %lld hits, %lld misses, %lld dirtied\n" \
@@ -383,6 +385,7 @@ extern Datum PGUT_EXPORT statsinfo_meminfo(PG_FUNCTION_ARGS);
 
 extern PGUT_EXPORT void	_PG_init(void);
 extern PGUT_EXPORT void	_PG_fini(void);
+extern PGUT_EXPORT void	request_last_xact_activity(void);
 extern PGUT_EXPORT void	init_last_xact_activity(void);
 extern PGUT_EXPORT void	fini_last_xact_activity(void);
 extern PGUT_EXPORT void	init_wait_sampling(void);
@@ -490,7 +493,6 @@ static void must_be_superuser(void);
 static int get_devinfo(const char *path, Datum values[], bool nulls[]);
 static char *get_archive_path(void);
 static void adjust_log_destination(GucContext context, GucSource source);
-static int get_log_min_messages(void);
 static pid_t get_postmaster_pid(void);
 static bool verify_log_filename(const char *filename);
 static bool verify_timestr(const char *timestr);
@@ -532,10 +534,12 @@ static bool check_maintenance_time(char **newval, void **extra, GucSource source
 static void pg_statsinfo_emit_log_hook(ErrorData *edata);
 static bool is_log_level_output(int elevel, int log_min_level);
 static emit_log_hook_type	prev_emit_log_hook = NULL;
+static void pg_statsinfo_shmem_request_hook(void);
 static void pg_statsinfo_shmem_startup_hook(void);
 static void silShmemInit(void);
 static Size silShmemSize(void);
 static void lookup_sil_state(void);
+static shmem_request_hook_type	prev_shmem_request_hook = NULL;
 static shmem_startup_hook_type	prev_shmem_startup_hook = NULL;
 
 static Activity		 activity = { 0, 0, 0, 0, 0, 0 };
@@ -1808,7 +1812,7 @@ _PG_init(void)
 							NULL,
 							NULL);
 
-	EmitWarningsOnPlaceholders("pg_statsinfo");
+	MarkGUCPrefixReserved("pg_statsinfo");
 
 	if (IsUnderPostmaster)
 		return;
@@ -1816,11 +1820,6 @@ _PG_init(void)
 	/*
 	 * Check supported parameters combinations.
 	 */
-	if (get_log_min_messages() >= FATAL)
-		ereport(FATAL,
-			(errmsg(LOG_PREFIX "unsupported log_min_messages: %s",
-					GetConfigOption("log_min_messages", false)),
-			 errhint("must be same or more verbose than 'log'")));
 	if (!verify_log_filename(Log_filename))
 		ereport(FATAL,
 			(errmsg(LOG_PREFIX "unsupported log_filename: %s",
@@ -1856,20 +1855,17 @@ _PG_init(void)
 						PGC_POSTMASTER, PGC_S_OVERRIDE);
 #endif /* ADJUST_NON_CRITICAL_SETTINGS */
 
-	/* Install xact_last_activity */
-	init_last_xact_activity();
-	/* Install wait_sampling */
-	init_wait_sampling();
-
 	/* Install emit_log_hook */
 	TAKE_HOOK(emit_log, pg_statsinfo_emit_log_hook);
 
 	/* Request additional shared resources */
-	RequestAddinShmemSpace(silShmemSize());
-	RequestNamedLWLockTranche("pg_statsinfo", 1);
+	TAKE_HOOK(shmem_request, pg_statsinfo_shmem_request_hook);
 
 	/* Install shmem_startup_hook */
 	TAKE_HOOK(shmem_startup, pg_statsinfo_shmem_startup_hook);
+
+	/* Install xact_last_activity */
+	init_last_xact_activity();
 
 	/*
 	 * spawn pg_statsinfo launcher process if the first call
@@ -1892,6 +1888,8 @@ _PG_fini(void)
 	RESTORE_HOOK(emit_log);
 	/* Uninstall shmem_startup_hook */
 	RESTORE_HOOK(shmem_startup);
+	/* Uninstall shmem_request_hook */
+	RESTORE_HOOK(shmem_request);
 }
 
 /*
@@ -3561,22 +3559,6 @@ adjust_log_destination(GucContext context, GucSource source)
 	pfree(buf.data);
 }
 
-static int
-get_log_min_messages(void)
-{
-#ifndef WIN32
-	return log_min_messages;
-#else
-	/*
-	 * log_min_messages is not available on Windows because the variable is
-	 * not dllexport'ed. Instead, reparse config option text.
-	 */
-	return str_to_elevel("log_min_messages",
-						 GetConfigOption("log_min_messages", false),
-						 server_message_level_options);
-#endif
-}
-
 static pid_t
 get_postmaster_pid(void)
 {
@@ -4344,6 +4326,27 @@ is_log_level_output(int elevel, int log_min_level)
 		return true;
 
 	return false;
+}
+
+/*
+ * pg_statsinfo_shmem_request_hook - allocate or attach to shared memory
+ */
+static void
+pg_statsinfo_shmem_request_hook(void)
+{
+	if (prev_shmem_request_hook)
+		prev_shmem_request_hook();
+
+	/* Install wait_sampling */
+	init_wait_sampling();
+
+	/* Install last_xact_activity */
+	request_last_xact_activity();
+
+	RequestAddinShmemSpace(silShmemSize());
+	RequestNamedLWLockTranche("pg_statsinfo", 1);
+
+	return;
 }
 
 /*

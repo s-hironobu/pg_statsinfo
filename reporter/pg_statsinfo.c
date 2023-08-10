@@ -1,7 +1,7 @@
 /*
  * pg_statsinfo.c
  *
- * Copyright (c) 2009-2022, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
+ * Copyright (c) 2009-2023, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
  */
 #define __CSV__
 #include "pg_statsinfo.h"
@@ -12,7 +12,7 @@
 #define __USER__
 
 
-const char *PROGRAM_VERSION	= "14.0";
+const char *PROGRAM_VERSION	= "15.1";
 const char *PROGRAM_URL		= "https://github.com/ossc-db/pg_statsinfo/";
 const char *PROGRAM_EMAIL   = NULL;
 
